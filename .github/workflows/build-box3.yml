@@ -31,7 +31,7 @@ jobs:
           # 进入配置文件目录
           cd esp32-s3-box-3
           # 编译固件，生成bin文件（--no-logs减少日志输出，--verbose便于排查错误）
-          esphome compile esp32-s3-box-3.factory.yaml --no-logs --verbose
+          esphome compile esp32-s3-box-3.factory.yaml
 
       # 步骤5：查找编译好的固件文件并打包
       - name: 打包固件文件
