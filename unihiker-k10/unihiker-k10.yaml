@@ -98,302 +98,286 @@ wifi:                                     # WiFi配置
 
 captive_portal:                           # 配网门户（WiFi未配置时弹出配网页面）
 
-# ========================== 5. 物理按键配置（需修改）==========================
+# ========================== 5. 物理按键配置（使用 I2C 扩展）==========================
+i2c:
+  sda: GPIO47
+  scl: GPIO48
+  frequency: 100kHz
+
+pcf8574:
+  - id: io_expander
+    address: 0x20
+    pcf8575: false
+
 button:
-  - platform: factory_reset              # 恢复出厂设置按钮
+  - platform: factory_reset
     id: factory_reset_btn
-    internal: true                       # 内部组件（不在HA显示）
+    internal: true
 
 binary_sensor:
-  - platform: gpio                       # GPIO按键传感器
-    pin:
-      number: GPIO0                      # 按键引脚（需修改：K10的物理按键引脚）
-      mode: INPUT_PULLUP                 # 上拉输入
-      inverted: true                     # 电平反转（按下为低电平）
+  - platform: pcf8574
+    pcf8574_id: io_expander
+    number: 3  # A 按键 (P3)
     id: left_top_button
     internal: true
-    on_multi_click:                      # 多击事件
-      - timing:                          # 短按（按下≥50ms，松开≥50ms）
+    inverted: true  # 按下为低电平
+    on_multi_click:
+      - timing:
           - ON for at least 50ms
           - OFF for at least 50ms
         then:
-          - switch.turn_off: timer_ringing # 关闭计时器铃声
-      - timing:                          # 长按（按下≥10秒）
+          - switch.turn_off: timer_ringing
+      - timing:
           - ON for at least 10s
         then:
-          - button.press: factory_reset_btn # 触发恢复出厂设置
+          - button.press: factory_reset_btn
 
-# ========================== 6. 屏幕背光配置（需修改）==========================
+# ========================== 6. 屏幕背光配置 ==========================
 output:
-  - platform: ledc                       # LEDC PWM输出（控制背光）
-    pin: GPIO47                          # 背光引脚（需修改：K10的屏幕背光引脚）
+  - platform: ledc
+    pin: GPIO46  # 背光使能引脚（根据 _k10_base.py 推断）
     id: backlight_output
 
 light:
-  - platform: monochromatic              # 单色灯（控制屏幕背光）
+  - platform: monochromatic
     id: led
-    name: Screen                         # HA中显示的名称
+    name: Screen
     icon: "mdi:television"
     entity_category: config
-    output: backlight_output             # 关联背光输出
-    restore_mode: RESTORE_DEFAULT_ON     # 重启后默认开启
-    default_transition_length: 250ms     # 亮度过渡时间
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 250ms
 
-# ========================== 7. 总线配置（需修改）==========================
-i2c:                                     # I2C总线（屏幕/传感器用）
-  scl: GPIO18                            # SCL引脚（需修改：K10的I2C SCL）
-  sda: GPIO8                             # SDA引脚（需修改：K10的I2C SDA）
+# ========================== 7. 总线配置 ==========================
+spi:
+  - id: display_spi
+    clk_pin: GPIO12
+    mosi_pin: GPIO21
+    miso_pin: GPIO_NONE  # 屏幕无需 MISO
 
-i2s_audio:                               # I2S音频总线（麦克风/扬声器）
-  - id: i2s_audio_bus
-    i2s_lrclk_pin: GPIO45                # LRCLK引脚（需修改：K10的I2S LRCLK）
-    i2s_bclk_pin: GPIO17                 # BCLK引脚（需修改：K10的I2S BCLK）
-    i2s_mclk_pin: GPIO2                  # MCLK引脚（需修改：K10的I2S MCLK，无则删除）
+# ========================== 8. 音频组件配置 ==========================
+# I2S 音频总线
+i2s_audio:
+  - id: i2s_bus
+    i2s_lrclk_pin: GPIO38
+    i2s_bclk_pin: GPIO0
+    # K10 无 MCLK，注释掉
+    # i2s_mclk_pin: GPIO2
 
-# ========================== 8. 音频组件配置（需重点修改）==========================
-audio_adc:                               # 音频ADC（麦克风）
-  - platform: es7210                     # ADC芯片型号（需修改：K10的麦克风ADC芯片）
-    id: es7210_adc
-    bits_per_sample: 16bit               # 采样位深
-    sample_rate: 16000                   # 采样率（麦克风常用16000）
-
-audio_dac:                               # 音频DAC（扬声器）
-  - platform: es8311                     # DAC芯片型号（需修改：K10的扬声器DAC芯片）
-    id: es8311_dac
-    bits_per_sample: 16bit
-    sample_rate: 48000                   # 扬声器常用48000
-
-microphone:                               # 麦克风配置
+# 麦克风：ES7243E（I2S + I2C 控制）
+microphone:
   - platform: i2s_audio
-    id: box_mic                          # 重命名：建议改为k10_mic
+    id: k10_mic
+    i2s_din_pin: GPIO39
     sample_rate: 16000
-    i2s_din_pin: GPIO16                  # 麦克风数据输入引脚（需修改：K10的MIC DIN）
     bits_per_sample: 16bit
-    adc_type: external                   # 外部ADC（对应上面的audio_adc）
+    channel: mono
+    pdm: false
+    adc_type: external  # 使用外部 ADC（ES7243E）
 
-speaker:                                 # 扬声器配置
+# 扬声器：内置 DAC（通过 I2S）
+speaker:
   - platform: i2s_audio
-    id: box_speaker                      # 重命名：建议改为k10_speaker
-    i2s_dout_pin: GPIO15                 # 扬声器数据输出引脚（需修改：K10的SPK DOUT）
-    dac_type: external                   # 外部DAC（对应上面的audio_dac）
+    id: k10_speaker
+    i2s_dout_pin: GPIO45
     sample_rate: 48000
     bits_per_sample: 16bit
-    channel: left                        # 声道（K10若为单声道则保留）
-    audio_dac: es8311_dac                # 关联DAC（需改为K10的DAC ID）
-    buffer_duration: 100ms               # 音频缓冲时间
+    channel: mono
+    dac_type: internal  # ESP32-S3 内置 DAC
 
-media_player:                            # 媒体播放器（对接HA的TTS/音频）
+media_player:
   - platform: speaker
-    name: None                           # 隐藏名称（不在HA显示）
+    name: None
     id: speaker_media_player
-    volume_min: 0.5                      # 最小音量
-    volume_max: 0.8                      # 最大音量
-    announcement_pipeline:               # 播报管道（计时器/提示音）
-      speaker: box_speaker              # 关联扬声器（需改为k10_speaker）
+    volume_min: 0.5
+    volume_max: 0.8
+    announcement_pipeline:
+      speaker: k10_speaker
       format: FLAC
       sample_rate: 48000
-      num_channels: 1                   # 单声道
-    files:                               # 音频文件（计时器结束提示音）
-      - id: timer_finished_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
-    on_announcement:                     # 播报时的动作
-      - if:                              # 如果麦克风正在录音
-          condition:
-            - microphone.is_capturing:
-          then:
-            - script.execute: stop_wake_word # 停止唤醒词监听
-            - if:
-                condition:
-                  - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
-                then:
-                  - wait_until:
-                      - not:
-                          voice_assistant.is_running:
-      - if:                              # 如果语音助手未运行，标记为静音状态
-          condition:
-            not:
-              voice_assistant.is_running:
-          then:
-            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
-            - script.execute: draw_display
-    on_idle:                             # 播报结束后
-      - if:
-          condition:
-            not:
-              voice_assistant.is_running:
-          then:
-            - script.execute: start_wake_word # 重启唤醒词监听
-            - script.execute: set_idle_or_mute_phase
-            - script.execute: draw_display
+      num_channels: 1
+      files:
+        - id: timer_finished_sound
+          file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
+      on_announcement:
+        - if:
+            condition:
+              - microphone.is_capturing:
+            then:
+              - script.execute: stop_wake_word
+        - if:
+            condition:
+              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+            then:
+              - wait_until:
+                  - not: voice_assistant.is_running:
+        - if:
+            condition: not: voice_assistant.is_running:
+            then:
+              - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+              - script.execute: draw_display
+      on_idle:
+        - if:
+            condition: not: voice_assistant.is_running:
+            then:
+              - script.execute: start_wake_word
+              - script.execute: set_idle_or_mute_phase
+              - script.execute: draw_display
 
 # ========================== 9. 唤醒词与语音助手 ==========================
-micro_wake_word:                         # 本地唤醒词引擎
+micro_wake_word:
   id: mww
-  models:                                # 支持的唤醒词模型
+  models:
     - okay_nabu
     - hey_mycroft
     - hey_jarvis
-  on_wake_word_detected:                 # 检测到唤醒词时
-    - voice_assistant.start:             # 启动语音助手
+  on_wake_word_detected:
+    - voice_assistant.start:
         wake_word: !lambda return wake_word;
 
-voice_assistant:                         # 语音助手核心配置
+voice_assistant:
   id: va
-  microphone: box_mic                    # 关联麦克风（需改为k10_mic）
-  media_player: speaker_media_player     # 关联媒体播放器
-  micro_wake_word: mww                   # 关联本地唤醒词引擎
-  noise_suppression_level: 2             # 降噪级别
-  auto_gain: 31dBFS                      # 自动增益
-  volume_multiplier: 2.0                 # 音量倍数
-  on_listening:                          # 监听时
+  microphone: k10_mic
+  media_player: speaker_media_player
+  micro_wake_word: mww
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+  on_listening:
     - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};
-    - text_sensor.template.publish:      # 清空请求文本
+    - text_sensor.template.publish:
         id: text_request
         state: "..."
-    - text_sensor.template.publish:      # 清空回复文本
+    - text_sensor.template.publish:
         id: text_response
         state: "..."
-    - script.execute: draw_display       # 刷新屏幕
-  on_stt_vad_end:                        # 语音输入结束（VAD检测）
+    - script.execute: draw_display
+  on_stt_vad_end:
     - lambda: id(voice_assistant_phase) = ${voice_assist_thinking_phase_id};
     - script.execute: draw_display
-  on_stt_end:                            # 语音识别完成
-    - text_sensor.template.publish:      # 发布识别的文本
+  on_stt_end:
+    - text_sensor.template.publish:
         id: text_request
         state: !lambda return x;
     - script.execute: draw_display
-  on_tts_start:                          # TTS合成开始
-    - text_sensor.template.publish:      # 发布回复文本
+  on_tts_start:
+    - text_sensor.template.publish:
         id: text_response
         state: !lambda return x;
     - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
     - script.execute: draw_display
-  on_end:                                # 语音助手结束
-    - wait_until:                        # 等待播报完成
+  on_end:
+    - wait_until:
         condition:
           - media_player.is_announcing:
         timeout: 0.5s
     - wait_until:
         - and:
-            - not:
-                media_player.is_announcing:
-            - not:
-                speaker.is_playing:
-    - if:                                # 重启本地唤醒词
+            - not: media_player.is_announcing:
+            - not: speaker.is_playing:
+    - if:
         condition:
           - lambda: return id(wake_word_engine_location).state == "On device";
         then:
           - lambda: id(va).set_use_wake_word(false);
           - micro_wake_word.start:
-    - script.execute: set_idle_or_mute_phase
-    - script.execute: draw_display
-    - text_sensor.template.publish:      # 清空文本
+          - script.execute: set_idle_or_mute_phase
+          - script.execute: draw_display
+    - text_sensor.template.publish:
         id: text_request
         state: ""
     - text_sensor.template.publish:
         id: text_response
         state: ""
-  on_error:                              # 出错时
+  on_error:
     - if:
-        condition:
-          lambda: return !id(init_in_progress);
+        condition: lambda: return !id(init_in_progress);
         then:
           - lambda: id(voice_assistant_phase) = ${voice_assist_error_phase_id};
           - script.execute: draw_display
           - delay: 1s
           - if:
-              condition:
-                switch.is_off: mute
+              condition: switch.is_off: mute
               then:
                 - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
               else:
                 - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
           - script.execute: draw_display
-  on_client_connected:                   # HA客户端连接
+  on_client_connected:
     - lambda: id(init_in_progress) = false;
     - script.execute: start_wake_word
     - script.execute: set_idle_or_mute_phase
     - script.execute: draw_display
-  on_client_disconnected:                # HA客户端断开
+  on_client_disconnected:
     - script.execute: stop_wake_word
     - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
     - script.execute: draw_display
-  on_timer_started:                      # 计时器启动
+  on_timer_started:
     - script.execute: draw_display
-  on_timer_cancelled:                    # 计时器取消
+  on_timer_cancelled:
     - script.execute: draw_display
-  on_timer_updated:                      # 计时器更新
+  on_timer_updated:
     - script.execute: draw_display
-  on_timer_tick:                         # 计时器倒计时
+  on_timer_tick:
     - script.execute: draw_display
-  on_timer_finished:                     # 计时器结束
+  on_timer_finished:
     - switch.turn_on: timer_ringing
-    - wait_until:
-        media_player.is_announcing:
+    - wait_until: media_player.is_announcing:
     - lambda: id(voice_assistant_phase) = ${voice_assist_timer_finished_phase_id};
     - script.execute: draw_display
 
 # ========================== 10. 脚本（核心逻辑）==========================
 script:
-  - id: draw_display                     # 绘制屏幕脚本
+  - id: draw_display
     then:
-      - if:                              # 非初始化状态
-          condition:
-            lambda: return !id(init_in_progress);
+      - if:
+          condition: lambda: return !id(init_in_progress);
           then:
-            - if:                        # WiFi已连接
-                condition:
-                  wifi.connected:
+            - if:
+                condition: wifi.connected:
                 then:
-                  - if:                  # HA已连接
-                      condition:
-                        api.connected:
+                  - if:
+                      condition: api.connected:
                       then:
-                        - lambda: |      # 根据语音助手状态显示不同页面
+                        - lambda: |
                             switch(id(voice_assistant_phase)) {
                               case ${voice_assist_listening_phase_id}:
-                                id(s3_box_lcd).show_page(listening_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(listening_page);
                                 break;
                               case ${voice_assist_thinking_phase_id}:
-                                id(s3_box_lcd).show_page(thinking_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(thinking_page);
                                 break;
                               case ${voice_assist_replying_phase_id}:
-                                id(s3_box_lcd).show_page(replying_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(replying_page);
                                 break;
                               case ${voice_assist_error_phase_id}:
-                                id(s3_box_lcd).show_page(error_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(error_page);
                                 break;
                               case ${voice_assist_muted_phase_id}:
-                                id(s3_box_lcd).show_page(muted_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(muted_page);
                                 break;
                               case ${voice_assist_not_ready_phase_id}:
-                                id(s3_box_lcd).show_page(no_ha_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(no_ha_page);
                                 break;
                               case ${voice_assist_timer_finished_phase_id}:
-                                id(s3_box_lcd).show_page(timer_finished_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(timer_finished_page);
                                 break;
                               default:
-                                id(s3_box_lcd).show_page(idle_page);
-                                id(s3_box_lcd).update();
+                                id(k10_lcd).show_page(idle_page);
                             }
+                            id(k10_lcd).update();
                       else:
-                        - display.page.show: no_ha_page  # 无HA连接页面
-                        - component.update: s3_box_lcd
+                        - display.page.show: no_ha_page
+                        - component.update: k10_lcd
                 else:
-                  - display.page.show: no_wifi_page      # 无WiFi页面
-                  - component.update: s3_box_lcd
-          else:
-            - display.page.show: initializing_page       # 初始化页面
-            - component.update: s3_box_lcd
+                  - display.page.show: no_wifi_page
+                  - component.update: k10_lcd
+            else:
+              - display.page.show: initializing_page
+              - component.update: k10_lcd
 
-  - id: fetch_first_active_timer         # 获取第一个活跃计时器
+  # 其他脚本保持不变（fetch_first_active_timer, check_if_timers_active 等）
+  - id: fetch_first_active_timer
     then:
       - lambda: |
           const auto timers = id(va).get_timers();
@@ -404,7 +388,7 @@ script:
             }
           }
           id(global_first_active_timer) = output_timer;
-  - id: check_if_timers_active           # 检查是否有活跃计时器
+  - id: check_if_timers_active
     then:
       - lambda: |
           const auto timers = id(va).get_timers();
@@ -417,7 +401,7 @@ script:
             }
           }
           id(global_is_timer_active) = output;
-  - id: fetch_first_timer                # 获取第一个计时器
+  - id: fetch_first_timer
     then:
       - lambda: |
           const auto timers = id(va).get_timers();
@@ -428,7 +412,7 @@ script:
             }
           }
           id(global_first_timer) = output_timer;
-  - id: check_if_timers                  # 检查是否有计时器
+  - id: check_if_timers
     then:
       - lambda: |
           const auto timers = id(va).get_timers();
@@ -437,59 +421,54 @@ script:
             output = true;
           }
           id(global_is_timer) = output;
-
-  - id: draw_timer_timeline              # 绘制计时器时间轴
+  - id: draw_timer_timeline
     then:
       - lambda: |
           id(check_if_timers_active).execute();
           id(check_if_timers).execute();
           if (id(global_is_timer_active)){
             id(fetch_first_active_timer).execute();
-            int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
+            int active_pixels = round( 240 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
             if (active_pixels > 0){
-              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
+              id(k10_lcd).filled_rectangle(0 , 305 , 240 , 15 , Color::WHITE );
+              id(k10_lcd).filled_rectangle(0 , 306 , active_pixels , 13 , id(active_timer_color) );
             }
           } else if (id(global_is_timer)){
             id(fetch_first_timer).execute();
-            int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
+            int active_pixels = round( 240 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
             if (active_pixels > 0){
-              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
+              id(k10_lcd).filled_rectangle(0 , 305 , 240 , 15 , Color::WHITE );
+              id(k10_lcd).filled_rectangle(0 , 306 , active_pixels , 13 , id(paused_timer_color) );
             }
           }
-  - id: draw_active_timer_widget         # 绘制计时器控件
+  - id: draw_active_timer_widget
     then:
       - lambda: |
           id(check_if_timers_active).execute();
           if (id(global_is_timer_active)){
-            id(s3_box_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
-            id(s3_box_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
-
+            id(k10_lcd).filled_rectangle(40 , 40 , 160 , 50 , Color::WHITE );
+            id(k10_lcd).rectangle(40 , 40 , 160 , 50 , Color::BLACK );
             id(fetch_first_active_timer).execute();
             int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
             int minutes_left = floor((id(global_first_active_timer).seconds_left - hours_left * 3600) / 60);
             int seconds_left = id(global_first_active_timer).seconds_left - hours_left * 3600 - minutes_left * 60 ;
             auto display_hours = (hours_left < 10 ? "0" : "") + std::to_string(hours_left);
             auto display_minute = (minutes_left < 10 ? "0" : "") + std::to_string(minutes_left);
-            auto display_seconds = (seconds_left  < 10 ? "0" : "") + std::to_string(seconds_left) ;
-
+            auto display_seconds = (seconds_left < 10 ? "0" : "") + std::to_string(seconds_left) ;
             std::string display_string = "";
             if (hours_left > 0) {
               display_string = display_hours + ":" + display_minute;
             } else {
               display_string = display_minute + ":" + display_seconds;
             }
-            id(s3_box_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
+            id(k10_lcd).printf(80, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
           }
-  # 启动唤醒词（本地/HA）
   - id: start_wake_word
     then:
       - if:
           condition:
             and:
-              - not:
-                  - voice_assistant.is_running:
+              - not: voice_assistant.is_running:
               - lambda: return id(wake_word_engine_location).state == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
@@ -497,83 +476,75 @@ script:
       - if:
           condition:
             and:
-              - not:
-                  - voice_assistant.is_running:
+              - not: voice_assistant.is_running:
               - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
-  # 停止唤醒词
   - id: stop_wake_word
     then:
       - if:
-          condition:
-            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+          condition: lambda: return id(wake_word_engine_location).state == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
-          condition:
-            lambda: return id(wake_word_engine_location).state == "On device";
+          condition: lambda: return id(wake_word_engine_location).state == "On device";
           then:
             - micro_wake_word.stop:
-  # 设置空闲/静音状态
   - id: set_idle_or_mute_phase
     then:
       - if:
-          condition:
-            switch.is_off: mute
+          condition: switch.is_off: mute
           then:
             - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-          else:
-            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+        else:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
 
 # ========================== 11. 开关配置 ==========================
 switch:
-  - platform: gpio                       # 扬声器使能开关
+  - platform: gpio
     name: Speaker Enable
-    pin: GPIO46                          # 需修改：K10的扬声器使能引脚
+    pin: GPIO46  # 功放使能（根据 _k10_base.py 中 I2C 控制推测，此处保留 GPIO 控制）
     restore_mode: RESTORE_DEFAULT_ON
     entity_category: config
     disabled_by_default: true
-  - platform: template                   # 静音开关
+  - platform: template
     name: Mute
     id: mute
     icon: "mdi:microphone-off"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
-    on_turn_off:                         # 取消静音
+    on_turn_off:
       - microphone.unmute:
       - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
       - script.execute: draw_display
-    on_turn_on:                          # 开启静音
+    on_turn_on:
       - microphone.mute:
       - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
       - script.execute: draw_display
-  - platform: template                   # 计时器铃声开关
+  - platform: template
     id: timer_ringing
     optimistic: true
     internal: true
     restore_mode: ALWAYS_OFF
     on_turn_off:
       - lambda: |-
-              id(speaker_media_player)
-                ->make_call()
-                .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_OFF)
-                .set_announcement(true)
-                .perform();
-              id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 0);
+          id(speaker_media_player) ->make_call()
+            .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_OFF)
+            .set_announcement(true)
+            .perform();
+          id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 0);
       - media_player.stop:
           announcement: true
     on_turn_on:
       - lambda: |-
-            id(speaker_media_player)
-              ->make_call()
-              .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_ONE)
-              .set_announcement(true)
-              .perform();
-            id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 1000);
+          id(speaker_media_player) ->make_call()
+            .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_ONE)
+            .set_announcement(true)
+            .perform();
+          id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 1000);
       - media_player.speaker.play_on_device_media_file:
           media_file: timer_finished_sound
           announcement: true
@@ -582,7 +553,7 @@ switch:
 
 # ========================== 12. 唤醒词引擎选择 ==========================
 select:
-  - platform: template                   # 唤醒词引擎位置选择（本地/HA）
+  - platform: template
     entity_category: config
     name: Wake word engine location
     id: wake_word_engine_location
@@ -595,56 +566,51 @@ select:
     initial_option: On device
     on_value:
       - if:
-          condition:
-            lambda: return !id(init_in_progress);
+          condition: lambda: return !id(init_in_progress);
           then:
             - wait_until:
                 lambda: return id(voice_assistant_phase) == ${voice_assist_muted_phase_id} || id(voice_assistant_phase) == ${voice_assist_idle_phase_id};
             - if:
-                condition:
-                  lambda: return x == "In Home Assistant";
+                condition: lambda: return x == "In Home Assistant";
                 then:
                   - micro_wake_word.stop
                   - delay: 500ms
                   - if:
-                      condition:
-                        switch.is_off: mute
+                      condition: switch.is_off: mute
                       then:
                         - lambda: id(va).set_use_wake_word(true);
                         - voice_assistant.start_continuous:
             - if:
-                condition:
-                  lambda: return x == "On device";
+                condition: lambda: return x == "On device";
                 then:
                   - lambda: id(va).set_use_wake_word(false);
                   - voice_assistant.stop
                   - delay: 500ms
                   - if:
-                      condition:
-                        switch.is_off: mute
+                      condition: switch.is_off: mute
                       then:
                         - micro_wake_word.start
 
 # ========================== 13. 全局变量 ==========================
 globals:
-  - id: init_in_progress                 # 初始化状态
+  - id: init_in_progress
     type: bool
     restore_value: false
     initial_value: "true"
-  - id: voice_assistant_phase            # 语音助手状态
+  - id: voice_assistant_phase
     type: int
     restore_value: false
     initial_value: ${voice_assist_not_ready_phase_id}
-  - id: global_first_active_timer        # 第一个活跃计时器
+  - id: global_first_active_timer
     type: voice_assistant::Timer
     restore_value: false
-  - id: global_is_timer_active           # 是否有活跃计时器
+  - id: global_is_timer_active
     type: bool
     restore_value: false
-  - id: global_first_timer               # 第一个计时器
+  - id: global_first_timer
     type: voice_assistant::Timer
     restore_value: false
-  - id: global_is_timer                  # 是否有计时器
+  - id: global_is_timer
     type: bool
     restore_value: false
 
@@ -652,188 +618,30 @@ globals:
 image:
   - file: ${error_illustration_file}
     id: casita_error
-    resize: 320x240                     # 需修改：K10屏幕分辨率
-    type: RGB
-    transparency: alpha_channel
+    resize: 240x320  # K10 屏幕为 240x320（竖屏）
+    type: RGB565
   - file: ${idle_illustration_file}
     id: casita_idle
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
+    resize: 240x320
+    type: RGB565
   - file: ${listening_illustration_file}
     id: casita_listening
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
+    resize: 240x320
+    type: RGB565
   - file: ${thinking_illustration_file}
     id: casita_thinking
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
+    resize: 240x320
+    type: RGB565
   - file: ${replying_illustration_file}
     id: casita_replying
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
+    resize: 240x320
+    type: RGB565
   - file: ${timer_finished_illustration_file}
     id: casita_timer_finished
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
+    resize: 240x320
+    type: RGB565
   - file: ${loading_illustration_file}
     id: casita_initializing
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
-  - file: https://github.com/esphome/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
-    id: error_no_wifi
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
-  - file: https://github.com/esphome/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
-    id: error_no_ha
-    resize: 320x240
-    type: RGB
-    transparency: alpha_channel
-
-# ========================== 15. 字体配置（需修改）==========================
-font:
-  - file:
-      type: gfonts                      # 谷歌字体
-      family: ${font_family}            # 字体家族（K10需改为支持中文的字体）
-      weight: 300
-      italic: true
-    id: font_request
-    size: 15
-    glyphsets:
-      - ${font_glyphsets}               # 字符集（中文需修改）
-  - file:
-      type: gfonts
-      family: ${font_family}
-      weight: 300
-    id: font_response
-    size: 15
-    glyphsets:
-      - ${font_glyphsets}
-  - file:
-      type: gfonts
-      family: ${font_family}
-      weight: 300
-    id: font_timer
-    size: 30
-    glyphsets:
-      - ${font_glyphsets}
-
-# ========================== 16. 文本传感器（语音识别/回复）==========================
-text_sensor:
-  - id: text_request                    # 语音请求文本
-    platform: template
-    on_value:
-      lambda: |-
-        if(id(text_request).state.length()>32) { # 文本截断（最多32字符）
-          std::string name = id(text_request).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_request).state = (truncated+"...").c_str();
-        }
-
-  - id: text_response                   # 语音回复文本
-    platform: template
-    on_value:
-      lambda: |-
-        if(id(text_response).state.length()>32) {
-          std::string name = id(text_response).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_response).state = (truncated+"...").c_str();
-        }
-
-# ========================== 17. 颜色配置 ==========================
-color:
-  - id: idle_color
-    hex: ${idle_illustration_background_color}
-  - id: listening_color
-    hex: ${listening_illustration_background_color}
-  - id: thinking_color
-    hex: ${thinking_illustration_background_color}
-  - id: replying_color
-    hex: ${replying_illustration_background_color}
-  - id: loading_color
-    hex: ${loading_illustration_background_color}
-  - id: error_color
-    hex: ${error_illustration_background_color}
-  - id: active_timer_color
-    hex: "26ed3a"                       # 活跃计时器颜色（绿色）
-  - id: paused_timer_color
-    hex: "3b89e3"                       # 暂停计时器颜色（蓝色）
-
-# ========================== 18. 屏幕配置（需重点修改）==========================
-spi:                                     # SPI总线（屏幕用）
-  - id: spi_bus
-    clk_pin: 7                          # 需修改：K10的SPI CLK引脚
-    mosi_pin: 6                         # 需修改：K10的SPI MOSI引脚
-
-display:
-  - platform: ili9xxx                   # 屏幕驱动（需修改：K10的屏幕驱动，如st7789v）
-    id: s3_box_lcd                      # 重命名：建议改为k10_lcd
-    model: S3BOX                        # 需修改：K10的屏幕型号
-    invert_colors: false
-    data_rate: 40MHz
-    cs_pin: 5                           # 需修改：K10的SPI CS引脚
-    dc_pin: 4                           # 需修改：K10的SPI DC引脚
-    reset_pin:                          # 需修改：K10的屏幕复位引脚（无则删除）
-      number: 48
-      inverted: true
-    update_interval: never              # 手动更新屏幕
-    pages:                              # 屏幕页面定义
-      - id: idle_page                   # 空闲页面
-        lambda: |-
-          it.fill(id(idle_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_idle), ImageAlign::CENTER);
-          id(draw_timer_timeline).execute();
-          id(draw_active_timer_widget).execute();
-      - id: listening_page              # 监听页面
-        lambda: |-
-          it.fill(id(listening_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
-          id(draw_timer_timeline).execute();
-      - id: thinking_page               # 思考页面
-        lambda: |-
-          it.fill(id(thinking_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_thinking), ImageAlign::CENTER);
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
-          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
-          id(draw_timer_timeline).execute();
-      - id: replying_page               # 回复页面
-        lambda: |-
-          it.fill(id(replying_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_replying), ImageAlign::CENTER);
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
-          it.filled_rectangle(20 , 190 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );
-          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
-          it.printf(30, 195, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
-          id(draw_timer_timeline).execute();
-      - id: timer_finished_page         # 计时器结束页面
-        lambda: |-
-          it.fill(id(idle_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_timer_finished), ImageAlign::CENTER);
-      - id: error_page                  # 错误页面
-        lambda: |-
-          it.fill(id(error_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_error), ImageAlign::CENTER);
-      - id: no_ha_page                  # 无HA连接页面
-        lambda: |-
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_ha), ImageAlign::CENTER);
-      - id: no_wifi_page                # 无WiFi页面
-        lambda: |-
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_wifi), ImageAlign::CENTER);
-      - id: initializing_page           # 初始化页面
-        lambda: |-
-          it.fill(id(loading_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_initializing), ImageAlign::CENTER);
-      - id: muted_page                  # 静音页面
-        lambda: |-
-          it.fill(Color::BLACK);
-          id(draw_timer_timeline).execute();
-          id(draw_active_timer_widget).execute();
+    resize: 240x320
+    type: RGB565
+  - file: https://github.com/esphome/wake-word-voice-assistants/raw/main/error_box_illustrations
