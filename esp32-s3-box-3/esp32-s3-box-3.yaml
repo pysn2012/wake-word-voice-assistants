@@ -691,30 +691,31 @@ image:
 # 3. 重新配置字体（替换原有font段）
 font:
   - file:
-      type: gfonts  # 从谷歌字体库拉取
-      family: ${font_family}  # Noto Sans SC（思源黑体简体中文）
-      weight: 400   # 字体粗细（400=常规，700=粗体）
+      type: gfonts
+      family: "Noto Sans SC"  # 带空格必须加引号
+      weight: 400
       italic: false
     id: font_request
     size: 15
-    glyphsets:
-      - ${font_glyphsets}  # 仅加载简体中文字符集
+    glyphs: ${allowed_characters}  # 替换 glyphsets 为 glyphs，引用自定义字符集
+
   - file:
       type: gfonts
-      family: ${font_family}
+      family: "Noto Sans SC"
       weight: 400
+      italic: false
     id: font_response
     size: 15
-    glyphsets:
-      - ${font_glyphsets}
+    glyphs: ${allowed_characters}
+
   - file:
       type: gfonts
-      family: ${font_family}
+      family: "Noto Sans SC"
       weight: 400
+      italic: false
     id: font_timer
     size: 30
-    glyphsets:
-      - ${font_glyphsets}
+    glyphs: ${allowed_characters}
 
 text_sensor:
   - id: text_request
