@@ -1,0 +1,72 @@
+# 工作流名称：手动编译ESP32-S3-BOX-3固件（可下载）
+name: build ESP32-S3-BOX-3
+
+# 触发条件：仅保留手动触发（workflow_dispatch）
+# 点击GitHub Actions页面的"Run workflow"即可触发
+on:
+  workflow_dispatch:
+    # 可选：添加手动触发时的参数（如选择ESPHome版本，非必需）
+    inputs:
+      esphome_version:
+        description: 'ESPHome版本（默认2025.11.3）'
+        required: false
+        default: '2025.11.3'
+        type: string
+
+# 并发控制：避免同一分支同时运行多个编译任务，重复任务自动取消
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 核心任务：编译ESP32-S3-BOX-3固件
+  build-box3-firmware:
+    name: 编译ESP32-S3-BOX-3固件
+    runs-on: ubuntu-latest  # 使用Ubuntu最新版运行环境
+    steps:
+      # 步骤1：拉取仓库代码到运行环境
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+
+      # 步骤2：设置Python环境（ESPHome依赖Python）
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'  # ESPHome推荐的Python版本
+          cache: 'pip'            # 缓存pip依赖，加速后续编译
+
+      # 步骤3：安装ESPHome
+      - name: 安装ESPHome
+        run: |
+          pip install esphome==${{ github.event.inputs.esphome_version || '2025.11.3' }}
+
+      # 步骤4：编译ESP32-S3-BOX-3固件
+      - name: 编译固件
+        run: |
+          # 进入配置文件目录
+          cd esp32-s3-box-3
+          # 编译固件，生成bin文件（--no-logs减少日志输出，--verbose便于排查错误）
+          esphome compile esp32-s3-box-3.factory.yaml --no-logs --verbose
+
+      # 步骤5：查找编译好的固件文件并打包
+      - name: 打包固件文件
+        run: |
+          # 创建固件输出目录
+          mkdir -p firmware-output
+          # 查找编译后的bin文件（ESPHome编译产物默认在.build目录）
+          find . -name "*.bin" -path "*/esp32-s3-box-3/.build/*" -exec cp {} firmware-output/ \;
+          # 复制配置文件到输出目录（便于核对）
+          cp esp32-s3-box-3/esp32-s3-box-3.factory.yaml firmware-output/
+          # 列出输出目录文件，确认固件已复制
+          ls -l firmware-output/
+
+      # 步骤6：上传固件作为Artifacts（核心：支持下载）
+      - name: 上传固件到Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          # Artifact名称（下载时显示的名称）
+          name: ESP32-S3-BOX-3固件-${{ github.sha }}
+          # 要上传的文件目录（包含编译好的bin和配置文件）
+          path: firmware-output/
+          # 保留时间：90天（默认90天，可修改，如14天）
+          retention-days: 30
