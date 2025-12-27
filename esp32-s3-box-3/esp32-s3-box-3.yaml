@@ -698,7 +698,7 @@ font:
     id: font_request
     size: 15
     glyphs: ${allowed_characters}
-    missing_glyphs: ignore
+    ignore_missing_glyphs: true
 
   - file:
       type: gfonts
@@ -708,7 +708,7 @@ font:
     id: font_response
     size: 15
     glyphs: ${allowed_characters}
-    missing_glyphs: ignore
+    ignore_missing_glyphs: true
 
   - file:
       type: gfonts
@@ -718,7 +718,7 @@ font:
     id: font_timer
     size: 30
     glyphs: ${allowed_characters}
-    missing_glyphs: ignore
+    ignore_missing_glyphs: true
 
 text_sensor:
   - id: text_request
