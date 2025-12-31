@@ -222,7 +222,7 @@ micro_wake_word:
   id: mww
   models:
     - okay_nabu
-    - https://github.com/pysn2012/wake-word-voice-assistants/raw/main/esp32-s3-box-3/xiao_zhi.tflite
+    - wake_word_models/xiao_zhi.tflite
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
