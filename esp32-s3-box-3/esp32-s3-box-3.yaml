@@ -222,7 +222,7 @@ micro_wake_word:
   id: mww
   models:
     - okay_nabu
-    - xiao_zhi
+    - model: xiao_zhi
       path: ../../wakeword/xiao_zhi.tflite
   on_wake_word_detected:
     - voice_assistant.start:
