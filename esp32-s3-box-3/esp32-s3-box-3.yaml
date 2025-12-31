@@ -218,15 +218,11 @@ media_player:
             - script.execute: set_idle_or_mute_phase
             - script.execute: draw_display
 
-external_files:
-  - file: xiao_zhi.tflite
-    id: model_xiao_zhi
-
 micro_wake_word:
   id: mww
   models:
     - okay_nabu
-    - !lambda return id(model_xiao_zhi).get_path();
+    - file://config/wakeword/xiao_zhi.tflite
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
