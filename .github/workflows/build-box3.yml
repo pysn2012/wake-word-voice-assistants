@@ -25,6 +25,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install esphome
 
+      - name: 检查模型文件是否存在
+        run: |
+          cd esp32-s3-box-3
+          if [ ! -f "xiao_zhi.tflite" ]; then
+            echo "::error::未找到 xiao_zhi.tflite，请检查文件路径"
+            exit 1
+          else
+            echo "模型文件存在，路径正确"
+          fi
+
       # 步骤4：编译ESP32-S3-BOX-3固件
       - name: 编译固件
         run: |
