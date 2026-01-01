@@ -9,22 +9,25 @@ esp32:
 # 启用日志
 logger:
 
-# SPI总线配置（匹配_k10_base.py中的定义）
+# SPI总线配置（在此处设置SPI速度）
 spi:
-  clk_pin: GPIO12    # 对应SPI.Bus(sck=12)
-  mosi_pin: GPIO21   # 对应SPI.Bus(mosi=21)
+  id: spi_bus  # 定义SPI总线ID，供显示屏引用
+  clk_pin: GPIO12
+  mosi_pin: GPIO21
+  frequency: 40MHz  # 将原spi_speed移至此处
 
-# 屏幕配置（关键修正：将ili9341改为ili9xxx）
+# 屏幕配置（修正平台参数）
 display:
-  - platform: ili9xxx  # 新版本中ili9341已合并到ili9xxx平台
-    model: ILI9341     # 明确指定型号为ILI9341
-    cs_pin: GPIO14     # 对应lcd_bus.SPIBus(cs=14)
-    dc_pin: GPIO13     # 对应lcd_bus.SPIBus(dc=13)
-    rotation: 180      # 对应set_rotation(lv.DISPLAY_ROTATION._180)
-    spi_speed: 40MHz   # 对应freq=40000000
+  - platform: ili9xxx
+    model: ILI9341
+    cs_pin: GPIO14
+    dc_pin: GPIO13
+    rotation: 180
+    invert_colors: false  # 添加必填项（根据硬件实际情况调整true/false）
+    spi_id: spi_bus  # 引用上面定义的SPI总线
     id: k10_display
 
-    # 仅显示基础图形
+    # 基础图形绘制
     lambda: |-
       // 1. 绘制白色背景
       it.fill(lv_color_hex(0xFFFFFF));
@@ -45,10 +48,10 @@ display:
         }
       }
 
-# 背光控制（匹配_k10_base.py中的I2C逻辑）
+# 背光控制
 i2c:
-  scl: GPIO48   # 对应I2C(0, scl=Pin(48))
-  sda: GPIO47   # 对应I2C(0, sda=Pin(47))
+  scl: GPIO48
+  sda: GPIO47
   frequency: 100kHz
 
 output:
@@ -56,9 +59,9 @@ output:
     id: screen_backlight
     pin:
       i2c_id: default_i2c
-      address: 0x20    # 对应myi2c操作的地址0x20
-      register: 0x02   # 背光控制寄存器
-      bit: 0           # 对应bit0控制
+      address: 0x20
+      register: 0x02
+      bit: 0
     inverted: false
 
 switch:
