@@ -1,54 +1,57 @@
 esphome:
-  name: k10-screen-test-only
-  platform: ESP32
-  board: esp32s3box
+  name: unihiker-k10
 
-# 仅保留屏幕所需核心配置
+esp32:
+  board: esp32s3box
+  framework:
+    type: esp-idf
+
+# 启用日志（方便调试）
+logger:
+
+# SPI总线配置（严格匹配_k10_base.py中的定义）
 spi:
-  clk_pin: GPIO12    # 对应SPI_bus = SPI.Bus(sck=12)
-  mosi_pin: GPIO21   # 对应spi_bus = SPI.Bus(mosi=21)
+  clk_pin: GPIO12    # 对应SPI.Bus(sck=12)
+  mosi_pin: GPIO21   # 对应SPI.Bus(mosi=21)
   miso_pin: -1       # 屏幕不使用MISO（与代码中miso=-1一致）
 
+# 屏幕配置（仅保留图形显示，移除字体依赖）
 display:
   - platform: ili9341
     model: TFT_240x320
-    cs_pin: GPIO14    # 对应display_bus = lcd_bus.SPIBus(cs=14)
-    dc_pin: GPIO13    # 对应display_bus = lcd_bus.SPIBus(dc=13)
+    cs_pin: GPIO14    # 对应lcd_bus.SPIBus(cs=14)
+    dc_pin: GPIO13    # 对应lcd_bus.SPIBus(dc=13)
     reset_pin: -1     # 代码中未使用复位引脚
     rotation: 180     # 对应set_rotation(lv.DISPLAY_ROTATION._180)
     spi_speed: 40MHz  # 对应freq=40000000
     id: k10_display
 
-    pages:
-      - id: test_page
-        lambda: |-
-          // 绘制纯色背景
-          it.fill(lv_color_hex(0xFFFFFF));
+    # 仅显示图形，不依赖字体
+    lambda: |-
+      // 1. 绘制白色背景
+      it.fill(lv_color_hex(0xFFFFFF));
 
-          // 绘制测试文本（匹配代码中默认字体）
-          it.print(10, 20, id(default_font), lv_color_hex(0xFF0000), "K10 Screen Test");
-          it.print(10, 50, id(small_font), lv_color_hex(0x000000), "No WiFi/MQTT Needed");
-          it.print(10, 70, id(small_font), lv_color_hex(0x000000), "240x320 Resolution");
+      // 2. 绘制彩色矩形（红色边框，黄色填充）
+      it.rectangle(20, 20, 100, 60, lv_color_hex(0xFF0000), lv_color_hex(0xFFFF00));
 
-          // 绘制基础图形（验证绘图功能）
-          it.rectangle(10, 100, 80, 50, lv_color_hex(0x00FF00), lv_color_hex(0xFFFF00));  // 矩形
-          it.circle(180, 125, 25, lv_color_hex(0x0000FF), 2);  // 圆形
-          it.line(10, 180, 230, 180, lv_color_hex(0x800080), 3);  // 线条
+      // 3. 绘制蓝色圆形（线宽3）
+      it.circle(180, 50, 30, lv_color_hex(0x0000FF), 3);
 
-# 字体配置（无需复杂字体，基础字体即可）
-font:
-  - file: "fonts/dejavu-sans.ttf"
-    id: default_font
-    size: 18
-  - file: "fonts/dejavu-sans.ttf"
-    id: small_font
-    size: 14
+      // 4. 绘制绿色斜线（线宽2）
+      it.line(20, 100, 220, 200, lv_color_hex(0x00FF00), 2);
 
-# 背光控制（必须保留，否则屏幕可能不亮）
+      // 5. 绘制紫色点矩阵
+      for (int x = 20; x < 220; x += 15) {
+        for (int y = 220; y < 300; y += 15) {
+          it.pixel(x, y, lv_color_hex(0x800080));
+        }
+      }
+
+# 背光控制（严格匹配_k10_base.py中的I2C逻辑）
 i2c:
   scl: GPIO48   # 对应I2C(0, scl=Pin(48))
   sda: GPIO47   # 对应I2C(0, sda=Pin(47))
-  frequency: 100kHz
+  frequency: 100kHz  # 与代码中freq=100000一致
 
 output:
   - platform: gpio
@@ -56,12 +59,12 @@ output:
     pin:
       i2c_id: default_i2c
       address: 0x20    # 代码中myi2c操作的地址0x20
-      register: 0x02   # 背光控制寄存器0x02
-      bit: 0           # 对应(temp[0] | 0x01)控制bit0
+      register: 0x02   # 背光控制寄存器（对应myi2c.readfrom_mem(0x20, 0x02, 1)）
+      bit: 0           # 对应(temp[0] | 0x01)操作bit0
     inverted: false
 
 switch:
   - platform: output
     name: "Screen Backlight"
     output: screen_backlight
-    restore_mode: ALWAYS_ON  # 上电自动开启背光
+    restore_mode: ALWAYS_ON  # 上电自动开启背光（与代码中打开背光逻辑一致）
