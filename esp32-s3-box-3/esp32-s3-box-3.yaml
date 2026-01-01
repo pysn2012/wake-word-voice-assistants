@@ -222,8 +222,8 @@ micro_wake_word:
   id: mww
   models:
     - okay_nabu
-    - name: "okay_computer"
-      path: "okay_computer.tflite"
+    - model: okay_computer
+      path: okay_computer.tflite
       probability_cutoff: 0.97  # 从 JSON 中获取的阈值
       feature_step_size: 10     # 从 JSON 中获取的参数
       sliding_window_size: 5    # 从 JSON 中获取的参数
