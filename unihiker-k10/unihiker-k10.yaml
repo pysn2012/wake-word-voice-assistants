@@ -13,7 +13,6 @@ logger:
 spi:
   clk_pin: GPIO12    # 对应SPI.Bus(sck=12)
   mosi_pin: GPIO21   # 对应SPI.Bus(mosi=21)
-  miso_pin: -1       # 屏幕不使用MISO（与代码中miso=-1一致）
 
 # 屏幕配置（仅保留图形显示，移除字体依赖）
 display:
@@ -21,7 +20,6 @@ display:
     model: TFT_240x320
     cs_pin: GPIO14    # 对应lcd_bus.SPIBus(cs=14)
     dc_pin: GPIO13    # 对应lcd_bus.SPIBus(dc=13)
-    reset_pin: -1     # 代码中未使用复位引脚
     rotation: 180     # 对应set_rotation(lv.DISPLAY_ROTATION._180)
     spi_speed: 40MHz  # 对应freq=40000000
     id: k10_display
