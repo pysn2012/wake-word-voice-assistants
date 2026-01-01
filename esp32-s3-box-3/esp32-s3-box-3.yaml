@@ -222,7 +222,7 @@ micro_wake_word:
   id: mww
   models:
     - model: okay_nabu
-    - model: okay_computer.json
+    - model: computer.json
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
