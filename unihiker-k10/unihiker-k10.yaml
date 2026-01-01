@@ -6,25 +6,27 @@ esp32:
   framework:
     type: esp-idf
 
-# 启用日志（方便调试）
+# 启用日志
 logger:
 
-# SPI总线配置（严格匹配_k10_base.py中的定义）
+# SPI总线配置（匹配_k10_base.py中的定义）
 spi:
   clk_pin: GPIO12    # 对应SPI.Bus(sck=12)
   mosi_pin: GPIO21   # 对应SPI.Bus(mosi=21)
+  miso_pin: -1       # 屏幕不使用MISO
 
-# 屏幕配置（仅保留图形显示，移除字体依赖）
+# 屏幕配置（关键修正：将ili9341改为ili9xxx）
 display:
-  - platform: ili9341
-    model: TFT_240x320
-    cs_pin: GPIO14    # 对应lcd_bus.SPIBus(cs=14)
-    dc_pin: GPIO13    # 对应lcd_bus.SPIBus(dc=13)
-    rotation: 180     # 对应set_rotation(lv.DISPLAY_ROTATION._180)
-    spi_speed: 40MHz  # 对应freq=40000000
+  - platform: ili9xxx  # 新版本中ili9341已合并到ili9xxx平台
+    model: ILI9341     # 明确指定型号为ILI9341
+    cs_pin: GPIO14     # 对应lcd_bus.SPIBus(cs=14)
+    dc_pin: GPIO13     # 对应lcd_bus.SPIBus(dc=13)
+    reset_pin: -1      # 未使用复位引脚
+    rotation: 180      # 对应set_rotation(lv.DISPLAY_ROTATION._180)
+    spi_speed: 40MHz   # 对应freq=40000000
     id: k10_display
 
-    # 仅显示图形，不依赖字体
+    # 仅显示基础图形
     lambda: |-
       // 1. 绘制白色背景
       it.fill(lv_color_hex(0xFFFFFF));
@@ -45,24 +47,24 @@ display:
         }
       }
 
-# 背光控制（严格匹配_k10_base.py中的I2C逻辑）
+# 背光控制（匹配_k10_base.py中的I2C逻辑）
 i2c:
   scl: GPIO48   # 对应I2C(0, scl=Pin(48))
   sda: GPIO47   # 对应I2C(0, sda=Pin(47))
-  frequency: 100kHz  # 与代码中freq=100000一致
+  frequency: 100kHz
 
 output:
   - platform: gpio
     id: screen_backlight
     pin:
       i2c_id: default_i2c
-      address: 0x20    # 代码中myi2c操作的地址0x20
-      register: 0x02   # 背光控制寄存器（对应myi2c.readfrom_mem(0x20, 0x02, 1)）
-      bit: 0           # 对应(temp[0] | 0x01)操作bit0
+      address: 0x20    # 对应myi2c操作的地址0x20
+      register: 0x02   # 背光控制寄存器
+      bit: 0           # 对应bit0控制
     inverted: false
 
 switch:
   - platform: output
     name: "Screen Backlight"
     output: screen_backlight
-    restore_mode: ALWAYS_ON  # 上电自动开启背光（与代码中打开背光逻辑一致）
+    restore_mode: ALWAYS_ON
