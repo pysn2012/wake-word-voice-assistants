@@ -2,7 +2,7 @@ esphome:
   name: unihiker-k10
 
 esp32:
-  board: esp32s3box
+  board: esp32-s3-devkitc1-n16r8
   framework:
     type: esp-idf
 
@@ -16,56 +16,56 @@ spi:
   mosi_pin: GPIO21
   frequency: 40MHz  # 将原spi_speed移至此处
 
+i2c:
+  id: i2c_a
+  scl: GPIO48
+  sda: GPIO47
+  frequency: 100kHz
+  scan: true
+
+color:
+  - id: my_red
+    red: 100%
+    green: 0%
+    blue: 0%
+
 # 屏幕配置（修正平台参数）
 display:
   - platform: ili9xxx
     model: ILI9341
     cs_pin: GPIO14
     dc_pin: GPIO13
-    rotation: 180
-    invert_colors: false  # 添加必填项（根据硬件实际情况调整true/false）
-    spi_id: spi_bus  # 引用上面定义的SPI总线
-    id: k10_display
+    invert_colors: false
+    show_test_card: false
+    dimensions:
+      width: 240
+      height: 320
+      offset_width: 0
+      offset_height: 0
 
     # 基础图形绘制
     lambda: |-
-      // 1. 绘制白色背景
-      it.fill(lv_color_hex(0xFFFFFF));
+      it.rectangle(0, 0, it.get_width(), it.get_height(), id(my_red));
 
-      // 2. 绘制彩色矩形（红色边框，黄色填充）
-      it.rectangle(20, 20, 100, 60, lv_color_hex(0xFF0000), lv_color_hex(0xFFFF00));
+# XL9535 I/O 扩展器配置
+xl9535:
+  - id: xl9535_hub
+    address: 0x20
+    i2c_id: i2c_a
 
-      // 3. 绘制蓝色圆形（线宽3）
-      it.circle(180, 50, 30, lv_color_hex(0x0000FF), 3);
-
-      // 4. 绘制绿色斜线（线宽2）
-      it.line(20, 100, 220, 200, lv_color_hex(0x00FF00), 2);
-
-      // 5. 绘制紫色点矩阵
-      for (int x = 20; x < 220; x += 15) {
-        for (int y = 220; y < 300; y += 15) {
-          it.pixel(x, y, lv_color_hex(0x800080));
-        }
-      }
-
-# 背光控制
-i2c:
-  scl: GPIO48
-  sda: GPIO47
-  frequency: 100kHz
-
+# 背光输出：使用 XL9535 的 Pin 0
 output:
   - platform: gpio
     id: screen_backlight
     pin:
-      i2c_id: default_i2c
-      address: 0x20
-      register: 0x02
-      bit: 0
-    inverted: false
+      xl9535: xl9535_hub
+      number: 0          # 对应 P0
+      mode: OUTPUT       # 必须设为输出
+      inverted: false    # 非反转：写 HIGH = 开启背光
 
+# 可选：添加开关以便在 Home Assistant 中控制
 switch:
   - platform: output
     name: "Screen Backlight"
     output: screen_backlight
-    restore_mode: ALWAYS_ON
+    restore_mode: ALWAYS_ON  # 启动时自动开启背光
