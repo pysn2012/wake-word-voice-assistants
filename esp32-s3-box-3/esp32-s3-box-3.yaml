@@ -221,8 +221,7 @@ media_player:
 micro_wake_word:
   id: mww
   models:
-    - model: okay_nabu
-    - model: computer.json
+    - okay_nabu
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
