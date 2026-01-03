@@ -1,0 +1,72 @@
+esphome:
+  name: unihiker-k10
+
+esp32:
+  board: esp32-s3-devkitc1-n16r8
+  framework:
+    type: esp-idf
+
+# 启用日志
+logger:
+
+# SPI总线配置（在此处设置SPI速度）
+spi:
+  id: spi_bus  # 定义SPI总线ID，供显示屏引用
+  clk_pin: GPIO12
+  mosi_pin: GPIO21
+  interface: spi2
+
+i2c:
+  id: i2c_a
+  scl: GPIO48
+  sda: GPIO47
+  frequency: 100kHz
+  scan: true
+
+color:
+  - id: my_red
+    red: 100%
+    green: 0%
+    blue: 0%
+
+# 屏幕配置（修正平台参数）
+display:
+  - platform: ili9xxx
+    model: ILI9341
+    cs_pin: GPIO14
+    dc_pin: GPIO13
+    spi_id: spi_bus
+    invert_colors: false
+    show_test_card: false
+    dimensions:
+      width: 240
+      height: 320
+      offset_width: 0
+      offset_height: 0
+
+    # 基础图形绘制
+    lambda: |-
+      it.rectangle(0, 0, it.get_width(), it.get_height(), id(my_red));
+
+# XL9535 I/O 扩展器配置
+xl9535:
+  - id: xl9535_hub
+    address: 0x20
+    i2c_id: i2c_a
+
+# 背光输出：使用 XL9535 的 Pin 0
+output:
+  - platform: gpio
+    id: screen_backlight
+    pin:
+      xl9535: xl9535_hub
+      number: 0          # 对应 P0
+      mode: OUTPUT       # 必须设为输出
+      inverted: false    # 非反转：写 HIGH = 开启背光
+
+# 可选：添加开关以便在 Home Assistant 中控制
+switch:
+  - platform: output
+    name: "Screen Backlight"
+    output: screen_backlight
+    restore_mode: ALWAYS_ON  # 启动时自动开启背光
