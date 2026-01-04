@@ -125,39 +125,45 @@ switch:
     output: screen_backlight
     restore_mode: ALWAYS_ON  # 启动时自动开启背光
     
+# 1. I²S 总线 ===============================================================
 i2s_audio:
   - id: i2s_audio_bus
-    i2s_lrclk_pin: GPIO45
-    i2s_bclk_pin: GPIO17
-    i2s_mclk_pin: GPIO2
+    i2s_lrclk_pin: GPIO38      # WS  （录音/播放共用）
+    i2s_bclk_pin:  GPIO0       # SCK （录音/播放共用）
+    # K10 没有把 MCLK 引出来，留空即可
+    # i2s_mclk_pin: GPIO2
 
+# 2. 录音 ===================================================================
 audio_adc:
-  - platform: es7210
-    id: es7210_adc
-    bits_per_sample: 16bit
-    sample_rate: 16000
-
-audio_dac:
-  - platform: es8311
-    id: es8311_dac
-    bits_per_sample: 16bit
-    sample_rate: 48000
+  - platform: es7243e
+    id: es7243e_adc
 
 microphone:
   - platform: i2s_audio
     id: box_mic
-    sample_rate: 16000
-    i2s_din_pin: GPIO16
-    bits_per_sample: 16bit
     adc_type: external
+    adc: es7243e_adc
+    i2s_din_pin: GPIO39        # ES7243E 数据输出
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    channel: left              # 单声道 MIC，只取左通道
+
+# 3. 播放 ===================================================================
+# NS4168 没有 I²C 控制，ESPHome 里就把它当成“外置 DAC”即可；
+# 音量固定，功放使能脚通过外部 IO-expander（0x20）控制，这里先不管。
+audio_dac:
+  - platform: external
+    id: ns4168_dac
+    bits_per_sample: 16bit
+    sample_rate: 48000
 
 speaker:
   - platform: i2s_audio
     id: box_speaker
-    i2s_dout_pin: GPIO15
     dac_type: external
-    sample_rate: 48000
+    audio_dac: ns4168_dac
+    i2s_dout_pin: GPIO45       # NS4168 数据输入
     bits_per_sample: 16bit
-    channel: left
-    audio_dac: es8311_dac
+    sample_rate: 48000
+    channel: left              # 单声道输出
     buffer_duration: 100ms
