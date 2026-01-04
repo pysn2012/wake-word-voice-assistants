@@ -25,6 +25,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install esphome
 
+      - name: 调试文件路径
+        run: |
+          echo "当前目录：$(pwd)"
+          echo "文件结构："
+          find . -name "*.tflite" -o -name "*.yaml" | sort
+          echo "模型文件是否存在："
+          ls -la wakeword/xiao_zhi.tflite
+          echo "从配置目录查看："
+          cd esp32-s3-box-3 && ls -la ../wakeword/xiao_zhi.tflite
+
       # 步骤4：编译ESP32-S3-BOX-3固件
       - name: 编译固件
         run: |
