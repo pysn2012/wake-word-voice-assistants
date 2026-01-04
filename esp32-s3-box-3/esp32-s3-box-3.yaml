@@ -50,9 +50,9 @@ esphome:
       - delay: 30s  # 延迟30秒
       - if:  # 条件判断
           condition:  # 条件
-            lambda: return id(init_in_progress);  # 初始化是否进行中
+            lambda: return id(init_in_progress);
           then:  # 满足条件执行
-            - lambda: id(init_in_progress) = false;  # 标记初始化完成
+            - lambda: id(init_in_progress) = false;
             - script.execute: draw_display  # 执行绘制显示脚本
 
 esp32:
@@ -196,7 +196,7 @@ media_player:  # 媒体播放器配置
             # 确保VA在继续之前停止
             - if:  # 条件判断
                 condition:  # 条件
-                  - lambda: return id(wake_word_engine_location).state == "In Home Assistant";  # 唤醒词引擎位置是否在Home Assistant
+                  - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
                 then:  # 满足条件执行
                   - wait_until:  # 等待直到
                       - not:  # 非
@@ -207,7 +207,7 @@ media_player:  # 媒体播放器配置
             not:  # 非
               voice_assistant.is_running:  # 语音助手是否在运行
           then:  # 满足条件执行
-            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};  # 设置语音助手阶段为静音
+            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
             - script.execute: draw_display  # 执行绘制显示脚本
     on_idle:  # 空闲时
       # 由于VA没有运行，这是用户发起的媒体播放结束。重新启动唤醒词。
@@ -226,7 +226,7 @@ micro_wake_word:  # 微型唤醒词配置
     - okay_nabu  # 模型名称
   on_wake_word_detected:  # 检测到唤醒词时
     - voice_assistant.start:  # 启动语音助手
-        wake_word: !lambda return wake_word;  # 唤醒词
+        wake_word: !lambda return wake_word;
 
 voice_assistant:  # 语音助手配置
   id: va  # ID
@@ -237,7 +237,7 @@ voice_assistant:  # 语音助手配置
   auto_gain: 31dBFS  # 自动增益
   volume_multiplier: 2.0  # 音量倍数
   on_listening:  # 监听时
-    - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};  # 设置阶段为监听
+    - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};
     - text_sensor.template.publish:  # 发布文本传感器状态
         id: text_request  # ID
         state: "..."  # 状态
@@ -246,18 +246,18 @@ voice_assistant:  # 语音助手配置
         state: "..."  # 状态
     - script.execute: draw_display  # 执行绘制显示脚本
   on_stt_vad_end:  # STT VAD结束时
-    - lambda: id(voice_assistant_phase) = ${voice_assist_thinking_phase_id};  # 设置阶段为思考
+    - lambda: id(voice_assistant_phase) = ${voice_assist_thinking_phase_id};
     - script.execute: draw_display  # 执行绘制显示脚本
   on_stt_end:  # STT结束时
     - text_sensor.template.publish:  # 发布文本传感器状态
         id: text_request  # ID
-        state: !lambda return x;  # 状态
+        state: !lambda return x;
     - script.execute: draw_display  # 执行绘制显示脚本
   on_tts_start:  # TTS开始时
     - text_sensor.template.publish:  # 发布文本传感器状态
         id: text_response  # ID
-        state: !lambda return x;  # 状态
-    - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};  # 设置阶段为回复
+        state: !lambda return x;
+    - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
     - script.execute: draw_display  # 执行绘制显示脚本
   on_end:  # 结束时
     # 等待一小段时间，看看是否有公告开始
@@ -275,9 +275,9 @@ voice_assistant:  # 语音助手配置
     # 如果启用，只重启mWW；流式唤醒词会自动重启
     - if:  # 条件判断
         condition:  # 条件
-          - lambda: return id(wake_word_engine_location).state == "On device";  # 唤醒词引擎位置是否在设备上
+          - lambda: return id(wake_word_engine_location).state == "On device";
         then:  # 满足条件执行
-          - lambda: id(va).set_use_wake_word(false);  # 设置不使用唤醒词
+          - lambda: id(va).set_use_wake_word(false);
           - micro_wake_word.start:  # 启动微型唤醒词
     - script.execute: set_idle_or_mute_phase  # 执行设置空闲或静音阶段脚本
     - script.execute: draw_display  # 执行绘制显示脚本
@@ -291,27 +291,27 @@ voice_assistant:  # 语音助手配置
   on_error:  # 错误时
     - if:  # 条件判断
         condition:  # 条件
-          lambda: return !id(init_in_progress);  # 初始化是否未进行中
+          lambda: return !id(init_in_progress);
         then:  # 满足条件执行
-          - lambda: id(voice_assistant_phase) = ${voice_assist_error_phase_id};  # 设置阶段为错误
+          - lambda: id(voice_assistant_phase) = ${voice_assist_error_phase_id};
           - script.execute: draw_display  # 执行绘制显示脚本
           - delay: 1s  # 延迟1秒
           - if:  # 条件判断
               condition:  # 条件
                 switch.is_off: mute  # 静音开关是否关闭
               then:  # 满足条件执行
-                - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};  # 设置阶段为空闲
+                - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
               else:  # 不满足条件执行
-                - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};  # 设置阶段为静音
+                - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
           - script.execute: draw_display  # 执行绘制显示脚本
   on_client_connected:  # 客户端连接时
-    - lambda: id(init_in_progress) = false;  # 标记初始化完成
+    - lambda: id(init_in_progress) = false;
     - script.execute: start_wake_word  # 执行启动唤醒词脚本
     - script.execute: set_idle_or_mute_phase  # 执行设置空闲或静音阶段脚本
     - script.execute: draw_display  # 执行绘制显示脚本
   on_client_disconnected:  # 客户端断开连接时
     - script.execute: stop_wake_word  # 执行停止唤醒词脚本
-    - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};  # 设置阶段为未就绪
+    - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
     - script.execute: draw_display  # 执行绘制显示脚本
   on_timer_started:  # 定时器启动时
     - script.execute: draw_display  # 执行绘制显示脚本
@@ -325,209 +325,212 @@ voice_assistant:  # 语音助手配置
     - switch.turn_on: timer_ringing  # 打开定时器铃声
     - wait_until:  # 等待直到
         media_player.is_announcing:  # 媒体播放器是否在公告
-    - lambda: id(voice_assistant_phase) = ${voice_assist_timer_finished_phase_id};  # 设置阶段为定时器结束
+    - lambda: id(voice_assistant_phase) = ${voice_assist_timer_finished_phase_id};
     - script.execute: draw_display  # 执行绘制显示脚本
 
-script:  # 脚本配置
-  - id: draw_display  # 绘制显示脚本
-    then:  # 执行步骤
-      - if:  # 条件判断
-          condition:  # 条件
-            lambda: return !id(init_in_progress);  # 初始化是否未进行中
-          then:  # 满足条件执行
-            - if:  # 条件判断
-                condition:  # 条件
-                  wifi.connected:  # WiFi是否连接
-                then:  # 满足条件执行
-                  - if:  # 条件判断
-                      condition:  # 条件
-                        api.connected:  # API是否连接
-                      then:  # 满足条件执行
-                        - lambda: |  # lambda表达式
-                            switch(id(voice_assistant_phase)) {  # 根据语音助手阶段切换页面
-                              case ${voice_assist_listening_phase_id}:  # 监听阶段
-                                id(s3_box_lcd).show_page(listening_page);  # 显示监听页面
-                                id(s3_box_lcd).update();  # 更新显示
+script:
+  # 绘制显示脚本
+  - id: draw_display
+    then:
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            - if:
+                condition:
+                  wifi.connected:
+                then:
+                  - if:
+                      condition:
+                        api.connected:
+                      then:
+                        - lambda: |
+                            switch(id(voice_assistant_phase)) {
+                              case ${voice_assist_listening_phase_id}:
+                                id(s3_box_lcd).show_page(listening_page);
+                                id(s3_box_lcd).update();
                                 break;
-                              case ${voice_assist_thinking_phase_id}:  # 思考阶段
-                                id(s3_box_lcd).show_page(thinking_page);  # 显示思考页面
-                                id(s3_box_lcd).update();  # 更新显示
+                              case ${voice_assist_thinking_phase_id}:
+                                id(s3_box_lcd).show_page(thinking_page);
+                                id(s3_box_lcd).update();
                                 break;
-                              case ${voice_assist_replying_phase_id}:  # 回复阶段
-                                id(s3_box_lcd).show_page(replying_page);  # 显示回复页面
-                                id(s3_box_lcd).update();  # 更新显示
+                              case ${voice_assist_replying_phase_id}:
+                                id(s3_box_lcd).show_page(replying_page);
+                                id(s3_box_lcd).update();
                                 break;
-                              case ${voice_assist_error_phase_id}:  # 错误阶段
-                                id(s3_box_lcd).show_page(error_page);  # 显示错误页面
-                                id(s3_box_lcd).update();  # 更新显示
+                              case ${voice_assist_error_phase_id}:
+                                id(s3_box_lcd).show_page(error_page);
+                                id(s3_box_lcd).update();
                                 break;
-                              case ${voice_assist_muted_phase_id}:  # 静音阶段
-                                id(s3_box_lcd).show_page(muted_page);  # 显示静音页面
-                                id(s3_box_lcd).update();  # 更新显示
+                              case ${voice_assist_muted_phase_id}:
+                                id(s3_box_lcd).show_page(muted_page);
+                                id(s3_box_lcd).update();
                                 break;
-                              case ${voice_assist_not_ready_phase_id}:  # 未就绪阶段
-                                id(s3_box_lcd).show_page(no_ha_page);  # 显示无Home Assistant页面
-                                id(s3_box_lcd).update();  # 更新显示
+                              case ${voice_assist_not_ready_phase_id}:
+                                id(s3_box_lcd).show_page(no_ha_page);
+                                id(s3_box_lcd).update();
                                 break;
-                              case ${voice_assist_timer_finished_phase_id}:  # 定时器结束阶段
-                                id(s3_box_lcd).show_page(timer_finished_page);  # 显示定时器结束页面
-                                id(s3_box_lcd).update();  # 更新显示
+                              case ${voice_assist_timer_finished_phase_id}:
+                                id(s3_box_lcd).show_page(timer_finished_page);
+                                id(s3_box_lcd).update();
                                 break;
-                              default:  # 默认
-                                id(s3_box_lcd).show_page(idle_page);  # 显示空闲页面
-                                id(s3_box_lcd).update();  # 更新显示
+                              default:
+                                id(s3_box_lcd).show_page(idle_page);
+                                id(s3_box_lcd).update();
                             }
-                      else:  # 不满足条件执行
-                        - display.page.show: no_ha_page  # 显示无Home Assistant页面
-                        - component.update: s3_box_lcd  # 更新显示组件
-                else:  # 不满足条件执行
-                  - display.page.show: no_wifi_page  # 显示无WiFi页面
-                  - component.update: s3_box_lcd  # 更新显示组件
-          else:  # 不满足条件执行
-            - display.page.show: initializing_page  # 显示初始化页面
-            - component.update: s3_box_lcd  # 更新显示组件
+                      else:
+                        - display.page.show: no_ha_page
+                        - component.update: s3_box_lcd
+                else:
+                  - display.page.show: no_wifi_page
+                  - component.update: s3_box_lcd
+          else:
+            - display.page.show: initializing_page
+            - component.update: s3_box_lcd
 
-  - id: fetch_first_active_timer  # 获取第一个活跃定时器脚本
-    then:  # 执行步骤
-      - lambda: |  # lambda表达式
-          const auto timers = id(va).get_timers();  # 获取所有定时器
-          auto output_timer = timers.begin()->second;  # 初始化输出定时器
-          for (auto &iterable_timer : timers) {  # 遍历定时器
-            if (iterable_timer.second.is_active && iterable_timer.second.seconds_left <= output_timer.seconds_left) {  # 判断是否为活跃且剩余时间最短
-              output_timer = iterable_timer.second;  # 更新输出定时器
+  # 获取第一个活跃定时器脚本
+  - id: fetch_first_active_timer
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          auto output_timer = timers.begin()->second;
+          for (auto &iterable_timer : timers) {
+            if (iterable_timer.second.is_active && iterable_timer.second.seconds_left <= output_timer.seconds_left) {
+              output_timer = iterable_timer.second;
             }
           }
-          id(global_first_active_timer) = output_timer;  # 存储第一个活跃定时器
-
-  - id: check_if_timers_active  # 检查是否有活跃定时器脚本
-    then:  # 执行步骤
-      - lambda: |  # lambda表达式
-          const auto timers = id(va).get_timers();  # 获取所有定时器
-          bool output = false;  # 输出结果
-          if (timers.size() > 0) {  # 有定时器
-            for (auto &iterable_timer : timers) {  # 遍历定时器
-              if(iterable_timer.second.is_active) {  # 有活跃定时器
-                output = true;  # 设为true
+          id(global_first_active_timer) = output_timer;
+  
+  # 检查是否有活跃定时器脚本
+  - id: check_if_timers_active
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          bool output = false;
+          if (timers.size() > 0) {
+            for (auto &iterable_timer : timers) {
+              if(iterable_timer.second.is_active) {
+                output = true;
               }
             }
           }
-          id(global_is_timer_active) = output;  # 存储结果
-
-  - id: fetch_first_timer  # 获取第一个定时器脚本
-    then:  # 执行步骤
-      - lambda: |  # lambda表达式
-          const auto timers = id(va).get_timers();  # 获取所有定时器
-          auto output_timer = timers.begin()->second;  # 初始化输出定时器
-          for (auto &iterable_timer : timers) {  # 遍历定时器
-            if (iterable_timer.second.seconds_left <= output_timer.seconds_left) {  # 判断剩余时间是否最短
-              output_timer = iterable_timer.second;  # 更新输出定时器
+          id(global_is_timer_active) = output;
+  
+  # 获取第一个定时器脚本
+  - id: fetch_first_timer
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          auto output_timer = timers.begin()->second;
+          for (auto &iterable_timer : timers) {
+            if (iterable_timer.second.seconds_left <= output_timer.seconds_left) {
+              output_timer = iterable_timer.second;
             }
           }
-          id(global_first_timer) = output_timer;  # 存储第一个定时器
-
-  - id: check_if_timers  # 检查是否有定时器脚本
-    then:  # 执行步骤
-      - lambda: |  # lambda表达式
-          const auto timers = id(va).get_timers();  # 获取所有定时器
-          bool output = false;  # 输出结果
-          if (timers.size() > 0) {  # 有定时器
-            output = true;  # 设为true
+          id(global_first_timer) = output_timer;
+  
+  # 检查是否有定时器脚本
+  - id: check_if_timers
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          bool output = false;
+          if (timers.size() > 0) {
+            output = true;
           }
-          id(global_is_timer) = output;  # 存储结果
+          id(global_is_timer) = output;
 
-  - id: draw_timer_timeline  # 绘制定时器时间线脚本
-    then:  # 执行步骤
-      - lambda: |  # lambda表达式
-          id(check_if_timers_active).execute();  # 执行检查是否有活跃定时器脚本
-          id(check_if_timers).execute();  # 执行检查是否有定时器脚本
-          if (id(global_is_timer_active)){  # 有活跃定时器
-            id(fetch_first_active_timer).execute();  # 执行获取第一个活跃定时器脚本
-            int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );  # 计算活跃像素数
-            if (active_pixels > 0){  # 活跃像素数大于0
-              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );  # 绘制白色矩形
-              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );  # 绘制活跃定时器颜色矩形
+  # 绘制定时器时间线脚本
+  - id: draw_timer_timeline
+    then:
+      - lambda: |
+          id(check_if_timers_active).execute();
+          id(check_if_timers).execute();
+          if (id(global_is_timer_active)){
+            id(fetch_first_active_timer).execute();
+            int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
+            if (active_pixels > 0){
+              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
             }
-          } else if (id(global_is_timer)){  # 有定时器但不活跃
-            id(fetch_first_timer).execute();  # 执行获取第一个定时器脚本
-            int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));  # 计算活跃像素数
-            if (active_pixels > 0){  # 活跃像素数大于0
-              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );  # 绘制白色矩形
-              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );  # 绘制暂停定时器颜色矩形
+          } else if (id(global_is_timer)){
+            id(fetch_first_timer).execute();
+            int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
+            if (active_pixels > 0){
+              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
             }
           }
+  # 绘制活跃定时器部件脚本
+  - id: draw_active_timer_widget
+    then:
+      - lambda: |
+          id(check_if_timers_active).execute();
+          if (id(global_is_timer_active)){
+            id(s3_box_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
+            id(s3_box_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
 
-  - id: draw_active_timer_widget  # 绘制活跃定时器部件脚本
-    then:  # 执行步骤
-      - lambda: |  # lambda表达式
-          id(check_if_timers_active).execute();  # 执行检查是否有活跃定时器脚本
-          if (id(global_is_timer_active)){  # 有活跃定时器
-            id(s3_box_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );  # 绘制白色矩形
-            id(s3_box_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );  # 绘制黑色边框
+            id(fetch_first_active_timer).execute();
+            int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
+            int minutes_left = floor((id(global_first_active_timer).seconds_left - hours_left * 3600) / 60);
+            int seconds_left = id(global_first_active_timer).seconds_left - hours_left * 3600 - minutes_left * 60 ;
+            auto display_hours = (hours_left < 10 ? "0" : "") + std::to_string(hours_left);
+            auto display_minute = (minutes_left < 10 ? "0" : "") + std::to_string(minutes_left);
+            auto display_seconds = (seconds_left  < 10 ? "0" : "") + std::to_string(seconds_left) ;
 
-            id(fetch_first_active_timer).execute();  # 执行获取第一个活跃定时器脚本
-            int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);  # 计算剩余小时
-            int minutes_left = floor((id(global_first_active_timer).seconds_left - hours_left * 3600) / 60);  # 计算剩余分钟
-            int seconds_left = id(global_first_active_timer).seconds_left - hours_left * 3600 - minutes_left * 60 ;  # 计算剩余秒数
-            auto display_hours = (hours_left < 10 ? "0" : "") + std::to_string(hours_left);  # 格式化小时显示
-            auto display_minute = (minutes_left < 10 ? "0" : "") + std::to_string(minutes_left);  # 格式化分钟显示
-            auto display_seconds = (seconds_left  < 10 ? "0" : "") + std::to_string(seconds_left) ;  # 格式化秒数显示
-
-            std::string display_string = "";  # 显示字符串
-            if (hours_left > 0) {  # 有小时
-              display_string = display_hours + ":" + display_minute;  # 小时:分钟
-            } else {  # 无小时
-              display_string = display_minute + ":" + display_seconds;  # 分钟:秒数
+            std::string display_string = "";
+            if (hours_left > 0) {
+              display_string = display_hours + ":" + display_minute;
+            } else {
+              display_string = display_minute + ":" + display_seconds;
             }
-            id(s3_box_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());  # 打印时间
+            id(s3_box_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
           }
-
   # 根据配置的位置启动mWW或流式唤醒词
-  - id: start_wake_word  # 启动唤醒词脚本
-    then:  # 执行步骤
-      - if:  # 条件判断
-          condition:  # 条件
-            and:  # 与
-              - not:  # 非
-                  - voice_assistant.is_running:  # 语音助手是否在运行
-              - lambda: return id(wake_word_engine_location).state == "On device";  # 唤醒词引擎位置是否在设备上
-          then:  # 满足条件执行
-            - lambda: id(va).set_use_wake_word(false);  # 设置不使用唤醒词
-            - micro_wake_word.start:  # 启动微型唤醒词
-      - if:  # 条件判断
-          condition:  # 条件
-            and:  # 与
-              - not:  # 非
-                  - voice_assistant.is_running:  # 语音助手是否在运行
-              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";  # 唤醒词引擎位置是否在Home Assistant
-          then:  # 满足条件执行
-            - lambda: id(va).set_use_wake_word(true);  # 设置使用唤醒词
-            - voice_assistant.start_continuous:  # 启动语音助手连续模式
-
+  - id: start_wake_word
+    then:
+      - if:
+          condition:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - lambda: return id(wake_word_engine_location).state == "On device";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - micro_wake_word.start:
+      - if:
+          condition:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous:
   # 根据配置的位置停止mWW或流式唤醒词
-  - id: stop_wake_word  # 停止唤醒词脚本
-    then:  # 执行步骤
-      - if:  # 条件判断
-          condition:  # 条件
-            lambda: return id(wake_word_engine_location).state == "In Home Assistant";  # 唤醒词引擎位置是否在Home Assistant
-          then:  # 满足条件执行
-            - lambda: id(va).set_use_wake_word(false);  # 设置不使用唤醒词
-            - voice_assistant.stop:  # 停止语音助手
-      - if:  # 条件判断
-          condition:  # 条件
-            lambda: return id(wake_word_engine_location).state == "On device";  # 唤醒词引擎位置是否在设备上
-          then:  # 满足条件执行
-            - micro_wake_word.stop:  # 停止微型唤醒词
-
+  - id: stop_wake_word
+    then:
+      - if:
+          condition:
+            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.stop:
+      - if:
+          condition:
+            lambda: return id(wake_word_engine_location).state == "On device";
+          then:
+            - micro_wake_word.stop:
   # 根据软件静音开关的状态，将语音助手阶段设置为空闲或静音
-  - id: set_idle_or_mute_phase  # 设置空闲或静音阶段脚本
-    then:  # 执行步骤
-      - if:  # 条件判断
-          condition:  # 条件
-            switch.is_off: mute  # 静音开关是否关闭
-          then:  # 满足条件执行
-            - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};  # 设置阶段为空闲
-          else:  # 不满足条件执行
-            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};  # 设置阶段为静音
+  - id: set_idle_or_mute_phase
+    then:
+      - if:
+          condition:
+            switch.is_off: mute
+          then:
+            - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+          else:
+            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
 
 switch:  # 开关配置
   - platform: gpio  # GPIO平台
@@ -545,11 +548,11 @@ switch:  # 开关配置
     entity_category: config  # 实体类别
     on_turn_off:  # 关闭时
       - microphone.unmute:  # 取消麦克风静音
-      - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};  # 设置阶段为空闲
+      - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
       - script.execute: draw_display  # 执行绘制显示脚本
     on_turn_on:  # 打开时
       - microphone.mute:  # 麦克风静音
-      - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};  # 设置阶段为静音
+      - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
       - script.execute: draw_display  # 执行绘制显示脚本
   - platform: template  # 模板平台
     id: timer_ringing  # ID
@@ -558,7 +561,7 @@ switch:  # 开关配置
     restore_mode: ALWAYS_OFF  # 恢复模式
     on_turn_off:  # 关闭时
       # 关闭重复模式并禁用播放列表项目之间的暂停
-      - lambda: |  # lambda表达式
+      - lambda: |-
               id(speaker_media_player)
                 ->make_call()
                 .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_OFF)
@@ -570,7 +573,7 @@ switch:  # 开关配置
           announcement: true  # 公告
     on_turn_on:  # 打开时
       # 打开重复模式，播放列表项目/重复之间暂停1000毫秒
-      - lambda: |  # lambda表达式
+      - lambda: |-
             id(speaker_media_player)
               ->make_call()
               .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_ONE)
@@ -598,13 +601,13 @@ select:  # 选择器配置
     on_value:  # 值变化时
       - if:  # 条件判断
           condition:  # 条件
-            lambda: return !id(init_in_progress);  # 初始化是否未进行中
+            lambda: return !id(init_in_progress);
           then:  # 满足条件执行
             - wait_until:  # 等待直到
-                lambda: return id(voice_assistant_phase) == ${voice_assist_muted_phase_id} || id(voice_assistant_phase) == ${voice_assist_idle_phase_id};  # 语音助手阶段为静音或空闲
+                lambda: return id(voice_assistant_phase) == ${voice_assist_muted_phase_id} || id(voice_assistant_phase) == ${voice_assist_idle_phase_id};
             - if:  # 条件判断
                 condition:  # 条件
-                  lambda: return x == "In Home Assistant";  # 值是否为在Home Assistant中
+                  lambda: return x == "In Home Assistant";
                 then:  # 满足条件执行
                   - micro_wake_word.stop  # 停止微型唤醒词
                   - delay: 500ms  # 延迟500毫秒
@@ -612,13 +615,13 @@ select:  # 选择器配置
                       condition:  # 条件
                         switch.is_off: mute  # 静音开关是否关闭
                       then:  # 满足条件执行
-                        - lambda: id(va).set_use_wake_word(true);  # 设置使用唤醒词
+                        - lambda: id(va).set_use_wake_word(true);
                         - voice_assistant.start_continuous:  # 启动语音助手连续模式
             - if:  # 条件判断
                 condition:  # 条件
-                  lambda: return x == "On device";  # 值是否为在设备上
+                  lambda: return x == "On device";
                 then:  # 满足条件执行
-                  - lambda: id(va).set_use_wake_word(false);  # 设置不使用唤醒词
+                  - lambda: id(va).set_use_wake_word(false);
                   - voice_assistant.stop  # 停止语音助手
                   - delay: 500ms  # 延迟500毫秒
                   - if:  # 条件判断
@@ -732,21 +735,21 @@ text_sensor:  # 文本传感器配置
   - id: text_request  # ID
     platform: template  # 模板平台
     on_value:  # 值变化时
-      lambda: |  # lambda表达式
-        if(id(text_request).state.length()>32) {  # 长度超过32
-          std::string name = id(text_request).state.c_str();  # 获取状态
-          std::string truncated = esphome::str_truncate(name.c_str(),31);  # 截断
-          id(text_request).state = (truncated+"...").c_str();  # 添加省略号
+      lambda: |-
+        if(id(text_request).state.length()>32) {
+          std::string name = id(text_request).state.c_str();
+          std::string truncated = esphome::str_truncate(name.c_str(),31);
+          id(text_request).state = (truncated+"...").c_str();
         }
 
   - id: text_response  # ID
     platform: template  # 模板平台
     on_value:  # 值变化时
-      lambda: |  # lambda表达式
-        if(id(text_response).state.length()>32) {  # 长度超过32
-          std::string name = id(text_response).state.c_str();  # 获取状态
-          std::string truncated = esphome::str_truncate(name.c_str(),31);  # 截断
-          id(text_response).state = (truncated+"...").c_str();  # 添加省略号
+      lambda: |-
+        if(id(text_response).state.length()>32) {
+          std::string name = id(text_response).state.c_str();
+          std::string truncated = esphome::str_truncate(name.c_str(),31);
+          id(text_response).state = (truncated+"...").c_str();
         }
 
 color:  # 颜色配置
@@ -784,57 +787,67 @@ display:  # 显示配置
       number: 48  # 引脚号
       inverted: true  # 反转
     update_interval: never  # 更新间隔
-    pages:  # 页面
-      - id: idle_page  # 空闲页面
-        lambda: |  # lambda表达式
-          it.fill(id(idle_color));  # 填充颜色
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_idle), ImageAlign::CENTER);  # 显示图像
-          id(draw_timer_timeline).execute();  # 执行绘制定时器时间线脚本
-          id(draw_active_timer_widget).execute();  # 执行绘制活跃定时器部件脚本
-      - id: listening_page  # 监听页面
-        lambda: |  # lambda表达式
-          it.fill(id(listening_color));  # 填充颜色
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);  # 显示图像
-          id(draw_timer_timeline).execute();  # 执行绘制定时器时间线脚本
-      - id: thinking_page  # 思考页面
-        lambda: |  # lambda表达式
-          it.fill(id(thinking_color));  # 填充颜色
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_thinking), ImageAlign::CENTER);  # 显示图像
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );  # 绘制白色矩形
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );  # 绘制黑色边框
-          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());  # 打印请求文本
-          id(draw_timer_timeline).execute();  # 执行绘制定时器时间线脚本
-      - id: replying_page  # 回复页面
-        lambda: |  # lambda表达式
-          it.fill(id(replying_color));  # 填充颜色
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_replying), ImageAlign::CENTER);  # 显示图像
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );  # 绘制白色矩形
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );  # 绘制黑色边框
-          it.filled_rectangle(20 , 190 , 280 , 30 , Color::WHITE );  # 绘制白色矩形
-          it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );  # 绘制黑色边框
-          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());  # 打印请求文本
-          it.printf(30, 195, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());  # 打印回复文本
-          id(draw_timer_timeline).execute();  # 执行绘制定时器时间线脚本
-      - id: timer_finished_page  # 定时器结束页面
-        lambda: |  # lambda表达式
-          it.fill(id(idle_color));  # 填充颜色
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_timer_finished), ImageAlign::CENTER);  # 显示图像
-      - id: error_page  # 错误页面
-        lambda: |  # lambda表达式
-          it.fill(id(error_color));  # 填充颜色
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_error), ImageAlign::CENTER);  # 显示图像
-      - id: no_ha_page  # 无Home Assistant页面
-        lambda: |  # lambda表达式
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_ha), ImageAlign::CENTER);  # 显示图像
-      - id: no_wifi_page  # 无WiFi页面
-        lambda: |  # lambda表达式
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_wifi), ImageAlign::CENTER);  # 显示图像
-      - id: initializing_page  # 初始化页面
-        lambda: |  # lambda表达式
-          it.fill(id(loading_color));  # 填充颜色
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_initializing), ImageAlign::CENTER);  # 显示图像
-      - id: muted_page  # 静音页面
-        lambda: |  # lambda表达式
-          it.fill(Color::BLACK);  # 填充黑色
-          id(draw_timer_timeline).execute();  # 执行绘制定时器时间线脚本
-          id(draw_active_timer_widget).execute();  # 执行绘制活跃定时器部件脚本
+    pages:
+      # 空闲页面
+      - id: idle_page
+        lambda: |-
+          it.fill(id(idle_color));
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_idle), ImageAlign::CENTER);
+          id(draw_timer_timeline).execute();
+          id(draw_active_timer_widget).execute();
+      # 监听页面
+      - id: listening_page
+        lambda: |-
+          it.fill(id(listening_color));
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
+          id(draw_timer_timeline).execute();
+      # 思考页面
+      - id: thinking_page
+        lambda: |-
+          it.fill(id(thinking_color));
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_thinking), ImageAlign::CENTER);
+          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
+          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
+          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
+          id(draw_timer_timeline).execute();
+      # 回复页面
+      - id: replying_page
+        lambda: |-
+          it.fill(id(replying_color));
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_replying), ImageAlign::CENTER);
+          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
+          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
+          it.filled_rectangle(20 , 190 , 280 , 30 , Color::WHITE );
+          it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );
+          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
+          it.printf(30, 195, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
+          id(draw_timer_timeline).execute();
+      # 定时器结束页面
+      - id: timer_finished_page
+        lambda: |-
+          it.fill(id(idle_color));
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_timer_finished), ImageAlign::CENTER);
+      # 错误页面
+      - id: error_page
+        lambda: |-
+          it.fill(id(error_color));
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_error), ImageAlign::CENTER);
+      # 无Home Assistant页面
+      - id: no_ha_page
+        lambda: |-
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_ha), ImageAlign::CENTER);
+      # 无WiFi页面
+      - id: no_wifi_page
+        lambda: |-
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_wifi), ImageAlign::CENTER);
+      # 初始化页面
+      - id: initializing_page
+        lambda: |-
+          it.fill(id(loading_color));
+          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_initializing), ImageAlign::CENTER);
+      # 静音页面
+      - id: muted_page
+        lambda: |-
+          it.fill(Color::BLACK);
+          id(draw_timer_timeline).execute();
+          id(draw_active_timer_widget).execute();

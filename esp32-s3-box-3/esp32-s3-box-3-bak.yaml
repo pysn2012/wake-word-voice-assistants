@@ -327,6 +327,7 @@ voice_assistant:
     - script.execute: draw_display
 
 script:
+  # 绘制显示脚本
   - id: draw_display
     then:
       - if:
@@ -385,6 +386,7 @@ script:
             - display.page.show: initializing_page
             - component.update: s3_box_lcd
 
+  # 获取第一个活跃定时器脚本
   - id: fetch_first_active_timer
     then:
       - lambda: |
@@ -396,6 +398,8 @@ script:
             }
           }
           id(global_first_active_timer) = output_timer;
+  
+  # 检查是否有活跃定时器脚本
   - id: check_if_timers_active
     then:
       - lambda: |
@@ -409,6 +413,8 @@ script:
             }
           }
           id(global_is_timer_active) = output;
+  
+  # 获取第一个定时器脚本
   - id: fetch_first_timer
     then:
       - lambda: |
@@ -420,6 +426,8 @@ script:
             }
           }
           id(global_first_timer) = output_timer;
+  
+  # 检查是否有定时器脚本
   - id: check_if_timers
     then:
       - lambda: |
@@ -430,6 +438,7 @@ script:
           }
           id(global_is_timer) = output;
 
+  # 绘制定时器时间线脚本
   - id: draw_timer_timeline
     then:
       - lambda: |
@@ -450,6 +459,7 @@ script:
               id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
             }
           }
+  # 绘制活跃定时器部件脚本
   - id: draw_active_timer_widget
     then:
       - lambda: |
@@ -474,7 +484,7 @@ script:
             }
             id(s3_box_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
           }
-  # Starts either mWW or the streaming wake word, depending on the configured location
+  # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
     then:
       - if:
@@ -495,7 +505,7 @@ script:
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
-  # Stops either mWW or the streaming wake word, depending on the configured location
+  # 根据配置的位置停止mWW或流式唤醒词
   - id: stop_wake_word
     then:
       - if:
@@ -509,7 +519,7 @@ script:
             lambda: return id(wake_word_engine_location).state == "On device";
           then:
             - micro_wake_word.stop:
-  # Set the voice assistant phase to idle or muted, depending on if the software mute switch is activated
+  # 根据软件静音开关的状态，将语音助手阶段设置为空闲或静音
   - id: set_idle_or_mute_phase
     then:
       - if:
