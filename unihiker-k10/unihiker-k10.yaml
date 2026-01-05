@@ -69,7 +69,7 @@ i2c:
   scl: GPIO48
   sda: GPIO47
   frequency: 100kHz
-  scan: true
+  scan: false
 
 # XL9535 I/O 扩展器配置
 xl9535:
@@ -87,7 +87,7 @@ output:
       mode: OUTPUT       # 必须设为输出
       inverted: false    # 非反转：写 HIGH = 开启背光
 
-# 可选：添加开关以便在 Home Assistant 中控制
+# 添加开关以便在 Home Assistant 中控制
 switch:
   - platform: output
     name: "Screen Backlight"
