@@ -62,7 +62,6 @@ psram:
   mode: octal
   speed: 80MHz
 
-captive_portal:
 
 # I2C总线
 i2c:
