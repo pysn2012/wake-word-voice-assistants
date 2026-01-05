@@ -87,6 +87,13 @@ output:
       mode: OUTPUT       # 必须设为输出
       inverted: false    # 非反转：写 HIGH = 开启背光
 
+# 可选：添加开关以便在 Home Assistant 中控制
+switch:
+  - platform: output
+    name: "Screen Backlight"
+    output: screen_backlight
+    restore_mode: ALWAYS_ON  # 启动时自动开启背光
+
 color:
   - id: my_red
     red: 100%
