@@ -45,17 +45,7 @@ esphome:
   friendly_name: ${friendly_name}
   min_version: 2025.5.0  # 要求的最低ESPHome版本
   name_add_mac_suffix: true  # 设备名后缀添加MAC地址，避免冲突
-  on_boot:  # 开机启动逻辑
-    priority: 600
-    then:
-      - script.execute: draw_display
-      - delay: 30s
-      - if:
-          condition:
-            lambda: return id(init_in_progress);
-          then:
-            - lambda: id(init_in_progress) = false;
-            - script.execute: draw_display
+
 
 esp32:
   board: esp32-s3-devkitc1-n16r8
@@ -71,26 +61,6 @@ esp32:
 psram:
   mode: octal
   speed: 80MHz
-
-api:
-  on_client_connected:
-    - script.execute: draw_display
-  on_client_disconnected:
-    - script.execute: draw_display
-
-ota:
-  - platform: esphome
-    id: ota_esphome
-
-logger:
-  hardware_uart: USB_SERIAL_JTAG
-
-wifi:
-  ap:
-  on_connect:
-    - script.execute: draw_display
-  on_disconnect:
-    - script.execute: draw_display
 
 captive_portal:
 
