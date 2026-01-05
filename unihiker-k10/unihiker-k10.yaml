@@ -137,7 +137,6 @@ microphone:
     id: box_mic
     i2s_audio_id: i2s_audio_bus
     adc_type: external
-    adc: es7243e_adc
     i2s_din_pin: GPIO39
     bits_per_sample: 16bit
     sample_rate: 16000
@@ -522,13 +521,6 @@ script:
 
 # 开关 (Switches)
 switch:
-  # 扬声器使能引脚 (GPIO46)待定
-  - platform: gpio
-    name: Speaker Enable
-    pin: GPIO46
-    restore_mode: RESTORE_DEFAULT_ON
-    entity_category: config
-    disabled_by_default: true
   # 软件静音开关
   - platform: template
     name: Mute
