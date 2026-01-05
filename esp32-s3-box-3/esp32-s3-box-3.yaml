@@ -3,16 +3,16 @@ substitutions:
   name: esp32-s3-box-3
   friendly_name: ESP32 S3 Box 3
   
-  # 显示屏各状态下的插图URL（来自GitHub）
-  loading_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/loading_320_240.png
-  idle_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/idle_320_240.png
-  listening_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/listening_320_240.png
-  thinking_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/thinking_320_240.png
-  replying_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/replying_320_240.png
-  error_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/error_320_240.png
-  timer_finished_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/timer_finished_320_240.png
+  # 显示屏各状态下的插图URL
+  loading_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/loading_320_240.png
+  idle_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/idle_320_240.png
+  listening_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/listening_320_240.png
+  thinking_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/thinking_320_240.png
+  replying_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/replying_320_240.png
+  error_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/error_320_240.png
+  timer_finished_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/timer_finished_320_240.png
 
-  # 各状态画面的背景色（HEX格式）
+  # 各状态画面的背景色（16进制）
   loading_illustration_background_color: "000000"
   idle_illustration_background_color: "000000"
   listening_illustration_background_color: "FFFFFF"
@@ -193,7 +193,7 @@ media_player:
       num_channels: 1  # S3 Box only has one output channel
     files:
       - id: timer_finished_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
+        file: https://github.com/pysn2012/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
     on_announcement:
       # 如果麦克风正在录音，则停止唤醒词（mWW或VA）
       - if:
@@ -714,12 +714,12 @@ image:
     resize: 320x240
     type: RGB
     transparency: alpha_channel
-  - file: https://github.com/esphome/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
+  - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
     id: error_no_wifi
     resize: 320x240
     type: RGB
     transparency: alpha_channel
-  - file: https://github.com/esphome/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
+  - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
     id: error_no_ha
     resize: 320x240
     type: RGB
