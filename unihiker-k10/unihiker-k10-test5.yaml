@@ -28,6 +28,14 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  on_boot:  # 开机启动逻辑
+    priority: 600
+    then:
+      - delay: 1s
+      - lambda: id(init_in_progress) = false;
+      - logger.log: "Unihiker K10 Button Test Started"
+      - logger.log: "Press Button A or B to test"
+      - component.update: k10_lcd
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -262,14 +270,4 @@ display:
         id(white_color),  // 颜色
         "B: %s",  // 格式化字符串
         id(button_b).state ? "PRESSED" : "RELEASED"  // B键状态
-      );
-
-# 开机初始化脚本
-on_boot:
-  priority: 600
-  then:
-    - delay: 1s
-    - lambda: id(init_in_progress) = false;
-    - logger.log: "Unihiker K10 Button Test Started"
-    - logger.log: "Press Button A or B to test"
-    - component.update: k10_lcd
+      )
