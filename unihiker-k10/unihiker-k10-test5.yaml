@@ -156,7 +156,7 @@ font:
       italic: false
     id: font_main
     size: 40
-    glyphs: "ABCDEFPressor"
+    glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
   
   - file:
@@ -166,7 +166,7 @@ font:
       italic: false
     id: font_status
     size: 20
-    glyphs: "PRESSEDRELEASED"
+    glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
   
   - file:
@@ -176,7 +176,7 @@ font:
       italic: false
     id: font_instruction
     size: 24
-    glyphs: "PressABtosee"
+    glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
 
 # 颜色定义 (Colors): 将HEX颜色值定义为ID，方便在显示逻辑中引用
