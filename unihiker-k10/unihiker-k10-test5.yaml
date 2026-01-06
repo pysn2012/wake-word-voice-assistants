@@ -86,11 +86,11 @@ globals:
     type: bool
     restore_value: false
     initial_value: "true"
-  # 按键显示文本
+  # 按键显示文本（修正：初始值加引号包裹）
   - id: display_text
     type: std::string
     restore_value: false
-    initial_value: "Press A or B"
+    initial_value: "\"Press A or B\""  # 关键修正：字符串需用双引号包裹
 
 # 二进制传感器：按键A和B
 binary_sensor:
@@ -270,4 +270,4 @@ display:
         id(white_color),  // 颜色
         "B: %s",  // 格式化字符串
         id(button_b).state ? "PRESSED" : "RELEASED"  // B键状态
-      )
+      );  // 关键修正：添加分号
