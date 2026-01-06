@@ -123,15 +123,15 @@ output:
 i2s_audio:
   - id: i2s_audio_bus
     i2s_lrclk_pin: GPIO38      # WS  （录音/播放共用）
-    i2s_bclk_pin:  GPIO0       # SCK （录音/播放共用）
-    # K10 没有把 MCLK 引出来，i2s_mclk_pin: GPIO2
+    i2s_bclk_pin: GPIO0       # SCK （录音/播放共用）
+    i2s_mclk_pin: GPIO3
 
 # 音频编解码器 (ADC: es7243e, DAC: NS4168)
 audio_adc:
   - platform: es7243e
     id: es7243e_adc
     i2c_id: i2c_a
-    address: 0x11          # AD0=1 → 0x16
+    address: 0x11          # 0x11是正确的
 
 microphone:
   - platform: i2s_audio
@@ -141,7 +141,7 @@ microphone:
     i2s_din_pin: GPIO39
     bits_per_sample: 16bit
     sample_rate: 16000
-    channel: left              # 单声道 MIC，只取左通道
+    # channel: left
 
 speaker:
   - platform: i2s_audio

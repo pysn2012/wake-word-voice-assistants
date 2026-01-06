@@ -108,8 +108,8 @@ xl9535:
     address: 0x20
     i2c_id: i2c_a
 
-# 背光输出：使用 XL9535 的 Pin 0
 output:
+  # 背光输出：使用 XL9535 的 Pin 0
   - platform: gpio
     id: screen_backlight
     pin:
@@ -117,6 +117,7 @@ output:
       number: 0          # 对应 P0
       mode: OUTPUT       # 必须设为输出
       inverted: false    # 非反转：写 HIGH = 开启背光
+
 
 # I2S音频总线配置
 i2s_audio:
@@ -130,7 +131,7 @@ audio_adc:
   - platform: es7243e
     id: es7243e_adc
     i2c_id: i2c_a
-    address: 0x15
+    address: 0x11          # 0x11是正确的
 
 microphone:
   - platform: i2s_audio
