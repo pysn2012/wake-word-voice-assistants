@@ -58,7 +58,7 @@ esphome:
             - script.execute: draw_display
 
 esp32:
-  board: esp32-s3-devkitc1-n16r8
+  board: esp32-s3-devkitc-1
   flash_size: 16MB
   cpu_frequency: 240MHz
   framework:
@@ -792,7 +792,7 @@ display:
       width: 240
       height: 320
     transform:
-      mirror_x: true
+      mirror_x: false
       mirror_y: true
     update_interval: never
     # 定义了多个显示页面，每个页面是一个独立的绘制函数
