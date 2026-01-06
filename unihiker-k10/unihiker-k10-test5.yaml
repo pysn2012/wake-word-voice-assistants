@@ -1,0 +1,275 @@
+# 定义可复用的变量
+substitutions:
+  name: unihiker-k10
+  friendly_name: Unihiker-k10
+  
+  # 屏幕显示的各类状态图片
+  listening_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/listening_240_320.png
+  error_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/error_240_320.png
+
+  # 各状态图片的背景色（16进制）
+  listening_illustration_background_color: "FFFFFF"
+  error_illustration_background_color: "000000"
+
+  # 语音助手不同阶段的ID，用于内部逻辑判断和显示切换
+  voice_assist_listening_phase_id: "2"     # 监听唤醒词
+  voice_assist_error_phase_id: "11"        # 错误
+
+  # 允许显示的字符集。此列表非常庞大，包含了多语言字符。
+  allowed_characters: |-
+    abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~`!$^()_[]\;:'",<.>?
+  
+  # 字体配置
+  font_glyphsets: "GF_Chinese_Simplified"
+  # 使用思源黑体简体中文版
+  font_family: "Noto Sans SC"
+
+# ESPHome核心配置
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+# 启用日志
+logger:
+
+# I2C总线
+i2c:
+  id: i2c_a
+  scl: GPIO48
+  sda: GPIO47
+  frequency: 100kHz
+  scan: false
+
+# XL9535 I/O 扩展器配置
+xl9535:
+  - id: xl9535_hub
+    address: 0x20
+    i2c_id: i2c_a
+
+output:
+  # 背光输出：使用 XL9535 的 Pin 0
+  - platform: gpio
+    id: screen_backlight
+    pin:
+      xl9535: xl9535_hub
+      number: 0          # 对应 P0
+      mode: OUTPUT       # 必须设为输出
+      inverted: false    # 非反转：写 HIGH = 开启背光
+
+# 全局变量 (Globals): 用于在不同组件间共享状态
+globals:
+  # 标记设备是否仍在初始化
+  - id: init_in_progress
+    type: bool
+    restore_value: false
+    initial_value: "true"
+  # 按键显示文本
+  - id: display_text
+    type: std::string
+    restore_value: false
+    initial_value: "Press A or B"
+
+# 二进制传感器：按键A和B
+binary_sensor:
+  # 按键A - XL9535 P14，配置为GPIO输入
+  - platform: gpio
+    id: button_a
+    name: "Button A"
+    pin:
+      xl9535: xl9535_hub  # 引用你之前定义的xl9535组件
+      number: 14          # 引脚号 P14
+      mode: INPUT         # 设置为输入模式
+      inverted: true      # 通常按键按下时为低电平，建议使用反转
+    on_press:
+      - lambda: id(display_text) = "AAAAA";
+      - logger.log: "Button A pressed"
+      - component.update: k10_lcd
+    on_release:
+      - logger.log: "Button A released"
+  
+  # 按键B - XL9535 P02，配置方法相同
+  - platform: gpio
+    id: button_b
+    name: "Button B"
+    pin:
+      xl9535: xl9535_hub
+      number: 2
+      mode: INPUT
+      inverted: true
+    on_press:
+      - lambda: id(display_text) = "BBBBB";
+      - logger.log: "Button B pressed"
+      - component.update: k10_lcd
+    on_release:
+      - logger.log: "Button B released"
+
+# 开关 (Switches)
+switch:
+  # 背光开关
+  - platform: output
+    name: "Screen Backlight"
+    id: screen_backlight_switch
+    output: screen_backlight
+    restore_mode: ALWAYS_ON  # 启动时自动开启背光
+
+# 图像资源 (Images): 从URL下载并缓存到设备Flash中
+image:
+  - file: ${error_illustration_file}
+    id: casita_error
+    resize: 240x320
+    type: RGB
+    transparency: alpha_channel
+  - file: ${listening_illustration_file}
+    id: casita_listening
+    resize: 240x320
+    type: RGB
+
+# 字体 (Fonts): 使用Google Fonts下载Noto Sans SC字体，并预渲染指定字符
+font:
+  - file:
+      type: gfonts
+      family: "Noto Sans SC"
+      weight: 400
+      italic: false
+    id: font_main
+    size: 40
+    glyphs: "ABCDEFPressor"
+    ignore_missing_glyphs: true
+  
+  - file:
+      type: gfonts
+      family: "Noto Sans SC"
+      weight: 400
+      italic: false
+    id: font_status
+    size: 20
+    glyphs: "PRESSEDRELEASED"
+    ignore_missing_glyphs: true
+  
+  - file:
+      type: gfonts
+      family: "Noto Sans SC"
+      weight: 400
+      italic: false
+    id: font_instruction
+    size: 24
+    glyphs: "PressABtosee"
+    ignore_missing_glyphs: true
+
+# 颜色定义 (Colors): 将HEX颜色值定义为ID，方便在显示逻辑中引用
+color:
+  - id: listening_color
+    hex: ${listening_illustration_background_color}
+  - id: error_color
+    hex: ${error_illustration_background_color}
+  - id: white_color
+    hex: "FFFFFF"
+  - id: black_color
+    hex: "000000"
+  - id: red_color
+    hex: "FF0000"
+  - id: blue_color
+    hex: "0000FF"
+  - id: green_color
+    hex: "00FF00"
+
+# SPI总线配置（在此处设置SPI速度）
+spi:
+  id: spi_bus  # 定义SPI总线ID，供显示屏引用
+  clk_pin: GPIO12
+  mosi_pin: GPIO21
+  interface: spi2
+
+# 屏幕配置（修正平台参数）
+display:
+  - platform: ili9xxx
+    id: k10_lcd
+    model: ILI9341
+    cs_pin: GPIO14
+    dc_pin: GPIO13
+    spi_id: spi_bus
+    invert_colors: false
+    show_test_card: false
+    dimensions:
+      width: 240
+      height: 320
+    transform:
+      mirror_x: false
+      mirror_y: true
+    update_interval: 100ms
+
+    # 基础图形绘制
+    lambda: |-
+      // 清屏，根据按键显示不同颜色
+      if (id(button_a).state) {
+        // 按下A键：红色背景
+        it.fill(id(red_color));
+      } else if (id(button_b).state) {
+        // 按下B键：蓝色背景
+        it.fill(id(blue_color));
+      } else {
+        // 未按键：黑色背景
+        it.fill(id(black_color));
+      }
+      
+      // 显示按键状态文字（居中显示）
+      int text_width = 200; // 估算文本宽度
+      int text_x = (it.get_width() - text_width) / 2;
+      
+      it.printf(
+        text_x, 80,  // X, Y位置
+        id(font_main),  // 字体
+        id(white_color),  // 颜色
+        "%s",  // 格式化字符串
+        id(display_text).c_str()  // 显示的文本
+      );
+      
+      // 显示操作说明
+      it.printf(
+        40, 160,  // X, Y位置
+        id(font_instruction),  // 字体
+        id(green_color),  // 颜色
+        "Press A or B"  // 文本
+      );
+      
+      // 显示当前状态
+      it.printf(
+        40, 200,  // X, Y位置
+        id(font_status),  // 字体
+        id(white_color),  // 颜色
+        "A: %s",  // 格式化字符串
+        id(button_a).state ? "PRESSED" : "RELEASED"  // A键状态
+      );
+      
+      it.printf(
+        40, 230,  // X, Y位置
+        id(font_status),  // 字体
+        id(white_color),  // 颜色
+        "B: %s",  // 格式化字符串
+        id(button_b).state ? "PRESSED" : "RELEASED"  // B键状态
+      );
+
+# 开机初始化脚本
+on_boot:
+  priority: 600
+  then:
+    - delay: 1s
+    - lambda: id(init_in_progress) = false;
+    - logger.log: "Unihiker K10 Button Test Started"
+    - logger.log: "Press Button A or B to test"
+    - component.update: k10_lcd

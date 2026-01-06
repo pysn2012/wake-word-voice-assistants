@@ -41,8 +41,9 @@ display:
     dimensions:
       width: 240
       height: 320
-      offset_width: 0
-      offset_height: 0
+    transform:
+      mirror_x: false
+      mirror_y: true
 
     # 基础图形绘制
     lambda: |-
