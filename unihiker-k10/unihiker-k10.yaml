@@ -126,13 +126,13 @@ i2s_audio:
     i2s_bclk_pin: GPIO0       # SCK （录音/播放共用）
     i2s_mclk_pin: GPIO3
 
-# 音频编解码器 (ADC: es7243e, DAC: NS4168)
+# 音频编解码器 (ADC: es7243e)
 audio_adc:
   - platform: es7243e
     id: es7243e_adc
     i2c_id: i2c_a
-    address: 0x11          # 0x11是正确的
-
+    address: 0x11
+    
 microphone:
   - platform: i2s_audio
     id: box_mic
@@ -141,8 +141,8 @@ microphone:
     i2s_din_pin: GPIO39
     bits_per_sample: 16bit
     sample_rate: 16000
-    # channel: left
 
+# DAC: NS4168
 speaker:
   - platform: i2s_audio
     id: box_speaker
@@ -151,7 +151,7 @@ speaker:
     i2s_dout_pin: GPIO45       # NS4168 数据输入
     bits_per_sample: 16bit
     sample_rate: 16000
-    channel: left              # 单声道输出
+    channel: right
 
 # 媒体播放器，用于播放TTS和提示音
 media_player:
@@ -737,7 +737,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_request).state.length()>32) {
+        if(id(text_request).state.length()>36) {
           std::string name = id(text_request).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_request).state = (truncated+"...").c_str();
@@ -747,7 +747,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_response).state.length()>32) {
+        if(id(text_response).state.length()>36) {
           std::string name = id(text_response).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_response).state = (truncated+"...").c_str();
@@ -816,8 +816,8 @@ display:
         lambda: |-
           it.fill(id(thinking_color));
           it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_thinking), ImageAlign::CENTER);
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
+          it.filled_rectangle(20 , 20 , 200 , 30 , Color::WHITE );
+          it.rectangle(20 , 20 , 200 , 30 , Color::BLACK );
           it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
           id(draw_timer_timeline).execute();
       # 回复页面
@@ -825,12 +825,12 @@ display:
         lambda: |-
           it.fill(id(replying_color));
           it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_replying), ImageAlign::CENTER);
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
-          it.filled_rectangle(20 , 190 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );
+          it.filled_rectangle(20 , 20 , 200 , 30 , Color::WHITE );
+          it.rectangle(20 , 20 , 200 , 30 , Color::BLACK );
+          it.filled_rectangle(20 , 270 , 200 , 30 , Color::WHITE );
+          it.rectangle(20 , 270 , 200 , 30 , Color::BLACK );
           it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
-          it.printf(30, 195, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
+          it.printf(30, 275, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
           id(draw_timer_timeline).execute();
       # 定时器结束页面
       - id: timer_finished_page
