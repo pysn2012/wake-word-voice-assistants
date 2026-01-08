@@ -58,17 +58,13 @@ spi:
 
 # 屏幕配置
 display:
-  - platform: st7789v
-    model: Custom
-    width: 240
-    height: 320
-    offset_width: 0
-    offset_height: 0
-    cs_pin: GPIO4
+  - platform: mipi_spi
+    id: main_display
+    model: ST7789V
     dc_pin: GPIO6
-    reset_pin:
-      number: 0            # 任意数字，0 最省事
-      ignore_strapping_warning: true
+    cs_pin: GPIO4
+    invert_colors: true
+
     lambda: |-
       it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
       it.print(0, 0, id(font), "Hello World!");
