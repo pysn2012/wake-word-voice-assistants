@@ -68,7 +68,7 @@ display:
     dc_pin: GPIO6
     reset_pin:
       number: 0            # 任意数字，0 最省事
-      ignore_strapping: true
+      ignore_strapping_warning: true
     lambda: |-
       it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
       it.print(0, 0, id(font), "Hello World!");
