@@ -1,0 +1,74 @@
+esphome:
+  name: lc-szpi-esp32c3
+  friendly_name: lc-szpi-esp32c3
+
+esp32:
+  board: esp32-c3-devkitc-02
+
+# 启用日志
+logger:
+
+# 屏幕背光控制 (GPIO2)
+output:
+  - platform: ledc
+    pin: GPIO2
+    id: backlight_output
+    inverted: true
+
+light:
+  - platform: monochromatic
+    id: led
+    name: Screen
+    icon: "mdi:television"
+    entity_category: config
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 250ms
+
+# 开关
+switch:
+  # 背光开关
+  - platform: output
+    name: "Screen Backlight"
+    output: screen_backlight
+    restore_mode: ALWAYS_ON  # 启动时自动开启背光
+
+# 图像资源 (Images): 从URL下载并缓存到设备Flash中
+image:
+  - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/listening_240_320.png
+    id: casita_listening
+    resize: 240x320
+    type: RGB
+    transparency: alpha_channel
+
+color:
+  - id: my_red
+    red: 100%
+    green: 0%
+    blue: 0%
+
+# SPI总线配置
+spi:
+  id: spi_bus  # 定义SPI总线ID，供显示屏引用
+  clk_pin: GPIO3
+  mosi_pin: GPIO5
+  interface: spi1
+
+# 屏幕配置
+display:
+  - platform: st7789v
+    model: Custom
+    width: 240
+    height: 320
+    offset_width: 0
+    offset_height: 0
+    cs_pin: GPIO4
+    dc_pin: GPIO6
+    lambda: |-
+      it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
+      it.print(0, 0, id(font), "Hello World!");
+
+font:
+  - file: "gfonts://Roboto"
+    id: font
+    size: 20
