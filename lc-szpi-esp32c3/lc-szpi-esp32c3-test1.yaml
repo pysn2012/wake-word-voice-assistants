@@ -4,6 +4,8 @@ esphome:
 
 esp32:
   board: esp32-c3-devkitc-02
+  framework:
+    type: esp-idf
 
 # 启用日志
 logger:
@@ -52,7 +54,7 @@ spi:
   id: spi_bus  # 定义SPI总线ID，供显示屏引用
   clk_pin: GPIO3
   mosi_pin: GPIO5
-  interface: spi1
+  # interface: spi1
 
 # 屏幕配置
 display:
