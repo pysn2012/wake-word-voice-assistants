@@ -67,9 +67,9 @@ display:
 
     lambda: |-
       it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
-      it.print(0, 0, id(font), "Hello World!");
+      it.print(0, 0, id(Roboto_font), "Hello World!");
 
 font:
   - file: "gfonts://Roboto"
-    id: font
+    id: Roboto_font
     size: 20
