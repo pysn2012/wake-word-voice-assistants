@@ -63,10 +63,6 @@ esp32:
   framework:
     type: esp-idf
 
-psram:
-  mode: octal
-  speed: 80MHz
-
 api:
   on_client_connected:
     - script.execute: draw_display
@@ -92,48 +88,51 @@ captive_portal:
 # I2C总线
 i2c:
   id: i2c_a
-  scl: GPIO48
-  sda: GPIO47
+  scl: GPIO1
+  sda: GPIO0
   frequency: 100kHz
   scan: false
 
-# XL9535 I/O 扩展器配置
-xl9535:
-  - id: xl9535_hub
-    address: 0x20
-    i2c_id: i2c_a
-
+# 屏幕背光控制 (GPIO2)
 output:
-  # 背光输出：使用 XL9535 的 Pin 0
-  - platform: gpio
-    id: screen_backlight
-    pin:
-      xl9535: xl9535_hub
-      number: 0          # 对应 P0
-      mode: OUTPUT       # 必须设为输出
-      inverted: false    # 非反转：写 HIGH = 开启背光
+  - platform: ledc
+    pin: GPIO2
+    id: backlight_output
+    inverted: true
 
+light:
+  - platform: monochromatic
+    id: led
+    name: Screen
+    icon: "mdi:television"
+    entity_category: config
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 250ms
+
+#音频放大器芯片NS4150B的EN引脚，这个引脚连接到了ESP32-C3的GPIO13，这个引脚通过下拉电阻接地，低电平关闭音频输出，高电平打开音频输出
 
 # I2S音频总线配置
 i2s_audio:
   - id: i2s_audio_bus
-    i2s_lrclk_pin: GPIO38      # WS  （录音/播放共用）
-    i2s_bclk_pin: GPIO0       # SCK （录音/播放共用）
-    i2s_mclk_pin: GPIO3
+    i2s_lrclk_pin: GPIO12      # WS  （录音/播放共用）
+    i2s_bclk_pin: GPIO8       # SCK （录音/播放共用）
+    i2s_mclk_pin: GPIO10
 
-# 音频编解码器 (ADC: es7243e, DAC: NS4168)
-audio_adc:
-  - platform: es7243e
-    id: es7243e_adc
-    i2c_id: i2c_a
-    address: 0x11          # 0x11是正确的
+# 音频编解码器 ( es8311)
+audio_dac:
+  - platform: es8311
+    i2c_id: bus_a
+    id: es8311_dac
+    bits_per_sample: 16bit
+    sample_rate: 16000
 
 microphone:
   - platform: i2s_audio
     id: box_mic
     i2s_audio_id: i2s_audio_bus
     adc_type: external
-    i2s_din_pin: GPIO39
+    i2s_din_pin: GPIO7
     bits_per_sample: 16bit
     sample_rate: 16000
     # channel: left
@@ -143,10 +142,10 @@ speaker:
     id: box_speaker
     i2s_audio_id: i2s_audio_bus
     dac_type: external
-    i2s_dout_pin: GPIO45       # NS4168 数据输入
+    i2s_dout_pin: GPIO11
     bits_per_sample: 16bit
     sample_rate: 16000
-    channel: left              # 单声道输出
+    channel: mono
 
 # 媒体播放器，用于播放TTS和提示音
 media_player:
@@ -330,46 +329,46 @@ script:
                         - lambda: |
                             switch(id(voice_assistant_phase)) {
                               case ${voice_assist_listening_phase_id}:
-                                id(k10_lcd).show_page(listening_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(listening_page);
+                                id(szpi_lcd).update();
                                 break;
                               case ${voice_assist_thinking_phase_id}:
-                                id(k10_lcd).show_page(thinking_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(thinking_page);
+                                id(szpi_lcd).update();
                                 break;
                               case ${voice_assist_replying_phase_id}:
-                                id(k10_lcd).show_page(replying_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(replying_page);
+                                id(szpi_lcd).update();
                                 break;
                               case ${voice_assist_error_phase_id}:
-                                id(k10_lcd).show_page(error_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(error_page);
+                                id(szpi_lcd).update();
                                 break;
                               case ${voice_assist_muted_phase_id}:
-                                id(k10_lcd).show_page(muted_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(muted_page);
+                                id(szpi_lcd).update();
                                 break;
                               case ${voice_assist_not_ready_phase_id}:
-                                id(k10_lcd).show_page(no_ha_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(no_ha_page);
+                                id(szpi_lcd).update();
                                 break;
                               case ${voice_assist_timer_finished_phase_id}:
-                                id(k10_lcd).show_page(timer_finished_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(timer_finished_page);
+                                id(szpi_lcd).update();
                                 break;
                               default:
-                                id(k10_lcd).show_page(idle_page);
-                                id(k10_lcd).update();
+                                id(szpi_lcd).show_page(idle_page);
+                                id(szpi_lcd).update();
                             }
                       else:
                         - display.page.show: no_ha_page
-                        - component.update: k10_lcd
+                        - component.update: szpi_lcd
                 else:
                   - display.page.show: no_wifi_page
-                  - component.update: k10_lcd
+                  - component.update: szpi_lcd
           else:
             - display.page.show: initializing_page
-            - component.update: k10_lcd
+            - component.update: szpi_lcd
 
   # 获取第一个活跃定时器脚本
   - id: fetch_first_active_timer
@@ -433,15 +432,15 @@ script:
             id(fetch_first_active_timer).execute();
             int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
             if (active_pixels > 0){
-              id(k10_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(k10_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
+              id(szpi_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(szpi_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
             }
           } else if (id(global_is_timer)){
             id(fetch_first_timer).execute();
             int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
             if (active_pixels > 0){
-              id(k10_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(k10_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
+              id(szpi_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(szpi_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
             }
           }
   # 绘制活跃定时器部件脚本
@@ -450,8 +449,8 @@ script:
       - lambda: |
           id(check_if_timers_active).execute();
           if (id(global_is_timer_active)){
-            id(k10_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
-            id(k10_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
+            id(szpi_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
+            id(szpi_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
 
             id(fetch_first_active_timer).execute();
             int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
@@ -467,7 +466,7 @@ script:
             } else {
               display_string = display_minute + ":" + display_seconds;
             }
-            id(k10_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
+            id(szpi_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
           }
   # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
@@ -767,29 +766,20 @@ color:
   - id: paused_timer_color
     hex: "3b89e3"
 
-# SPI总线配置（在此处设置SPI速度）
+# SPI总线配置
 spi:
   id: spi_bus  # 定义SPI总线ID，供显示屏引用
-  clk_pin: GPIO12
-  mosi_pin: GPIO21
-  interface: spi2
+  clk_pin: GPIO3
+  mosi_pin: GPIO5
 
-# 屏幕配置（修正平台参数）
+# 屏幕配置
 display:
-  - platform: ili9xxx
-    id: k10_lcd
-    model: ILI9341
-    cs_pin: GPIO14
-    dc_pin: GPIO13
-    spi_id: spi_bus
-    invert_colors: false
-    show_test_card: false
-    dimensions:
-      width: 240
-      height: 320
-    transform:
-      mirror_x: false
-      mirror_y: true
+  - platform: mipi_spi
+    id: szpi_lcd
+    model: ST7789V
+    dc_pin: GPIO6
+    cs_pin: GPIO4
+    invert_colors: true
     update_interval: never
     # 定义了多个显示页面，每个页面是一个独立的绘制函数
     pages:
