@@ -1,0 +1,40 @@
+---
+packages:
+  # 这是一个内联包，用于在 on_client_connected 之前添加 wait_until 动作
+  # 它必须出现在实际包之前，以便成为原始配置，从而让包配置中的 on_client_connected 列表追加到这个之后。
+  va_connected_wait_for_ble:
+    voice_assistant:
+      on_client_connected:
+        - wait_until: # 等待直到蓝牙（BLE）被禁用
+            not: ble.enabled
+  # 引入主配置文件，该文件包含了 lc-szpi-esp32c3 设备的完整配置
+  lc-szpi-esp32c3: !include lc-szpi-esp32c3.yaml
+
+esphome:
+  project:
+    name: esphome.voice-assistant # 项目名称
+    version: dev # 版本号
+
+ota:
+  - platform: http_request # OTA 更新平台
+    id: ota_http_request
+
+http_request: # HTTP 请求组件配置
+
+# 从 GitHub 导入包
+dashboard_import:
+  package_import_url: github://pysn2012/wake-word-voice-assistants/lc-szpi-esp32c3/lc-szpi-esp32c3.yaml@main
+
+wifi:
+  # 当 WiFi 连接成功后执行
+  on_connect:
+    - delay: 5s
+    - ble.disable:
+  # 当 WiFi 断开时执行
+  on_disconnect:
+    - ble.enable:
+
+improv_serial: # Improv 串行配置
+
+esp32_improv:
+  authorizer: none # 禁用授权
