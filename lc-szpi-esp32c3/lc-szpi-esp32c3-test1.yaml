@@ -27,14 +27,6 @@ light:
     restore_mode: RESTORE_DEFAULT_ON
     default_transition_length: 250ms
 
-# 开关
-switch:
-  # 背光开关
-  - platform: output
-    name: "Screen Backlight"
-    output: screen_backlight
-    restore_mode: ALWAYS_ON  # 启动时自动开启背光
-
 # 图像资源 (Images): 从URL下载并缓存到设备Flash中
 image:
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/listening_240_320.png
