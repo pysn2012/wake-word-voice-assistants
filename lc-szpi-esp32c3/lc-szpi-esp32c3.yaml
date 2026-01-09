@@ -110,8 +110,6 @@ light:
     restore_mode: RESTORE_DEFAULT_ON
     default_transition_length: 250ms
 
-#音频放大器芯片NS4150B的EN引脚，这个引脚连接到了ESP32-C3的GPIO13，这个引脚通过下拉电阻接地，低电平关闭音频输出，高电平打开音频输出
-
 # I2S音频总线配置
 i2s_audio:
   - id: i2s_audio_bus
@@ -122,10 +120,11 @@ i2s_audio:
 # 音频编解码器 ( es8311)
 audio_dac:
   - platform: es8311
-    i2c_id: bus_a
     id: es8311_dac
+    i2c_id: bus_a
+    address: 0x18
     bits_per_sample: 16bit
-    sample_rate: 16000
+    sample_rate: 48000
 
 microphone:
   - platform: i2s_audio
@@ -144,7 +143,7 @@ speaker:
     dac_type: external
     i2s_dout_pin: GPIO11
     bits_per_sample: 16bit
-    sample_rate: 16000
+    sample_rate: 48000
     channel: mono
 
 # 媒体播放器，用于播放TTS和提示音
@@ -157,7 +156,7 @@ media_player:
     announcement_pipeline:
       speaker: box_speaker
       format: FLAC
-      sample_rate: 16000
+      sample_rate: 48000
       num_channels: 1
     files:
       - id: timer_finished_sound
@@ -516,11 +515,14 @@ script:
 
 # 开关 (Switches)
 switch:
-  # 背光开关
-  - platform: output
-    name: "Screen Backlight"
-    output: screen_backlight
-    restore_mode: ALWAYS_ON  # 启动时自动开启背光
+  # 音频放大器芯片NS4150B的EN引脚GPIO13，低电平关闭，高电平打开
+  - platform: gpio
+    name: Speaker Enable
+    # inverted: yes
+    icon: "mdi:speaker"
+    entity_category: config
+    pin: GPIO13
+    restore_mode: RESTORE_DEFAULT_ON
 
   # 软件静音开关
   - platform: template
