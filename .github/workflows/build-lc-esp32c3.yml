@@ -31,7 +31,7 @@ jobs:
           # 进入配置文件目录
           cd lc-szpi-esp32c3
           # 编译固件，生成bin文件
-          esphome compile lc-szpi-esp32c3-test1.yaml
+          esphome compile lc-szpi-esp32c3.factory.yaml
 
       # 步骤5：动态查找编译产物
       - name: 动态查找 firmware.bin
