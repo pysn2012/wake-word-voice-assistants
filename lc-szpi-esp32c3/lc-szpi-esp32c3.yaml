@@ -1,7 +1,7 @@
 # 定义可复用的变量
 substitutions:
-  name: unihiker-k10
-  friendly_name: Unihiker-k10
+  name: lc-szpi-esp32c3
+  friendly_name: lc-szpi-esp32c3
   
   # 屏幕显示的各类状态图片
   loading_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/error_240_320.png
@@ -58,15 +58,10 @@ esphome:
             - script.execute: draw_display
 
 esp32:
-  board: esp32-s3-devkitc-1
-  flash_size: 16MB
-  cpu_frequency: 240MHz
+  board: esp32-c3-devkitc-02
+  flash_size: 8MB
   framework:
     type: esp-idf
-    sdkconfig_options:
-      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
-      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
-      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
 
 psram:
   mode: octal
