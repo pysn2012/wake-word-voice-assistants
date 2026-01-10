@@ -97,9 +97,8 @@ captive_portal:
 # I2C总线
 i2c:
   id: i2c_a
-  scl: GPIO1
-  sda: GPIO0
-  frequency: 100kHz
+  scl: GPIO2
+  sda: GPIO1
   scan: false
 
 # I/O扩展
