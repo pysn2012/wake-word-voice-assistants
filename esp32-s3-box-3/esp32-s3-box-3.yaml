@@ -233,6 +233,7 @@ micro_wake_word:
   id: mww
   models:
     - okay_nabu
+    - model: https://raw.githubusercontent.com/pysn2012/wake-word-voice-assistants/refs/heads/main/models/hey_sarah.json
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
