@@ -221,6 +221,7 @@ micro_wake_word:
   id: mww
   models:
     - okay_nabu
+    - model: https://raw.githubusercontent.com/pysn2012/wake-word-voice-assistants/refs/heads/main/models/hey_sarah.json
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
@@ -537,7 +538,7 @@ script:
 # 开关 (Switches)
 switch:
   - platform: gpio
-    name: 功放（扬声器）
+    name: "AMP EN"
     id: amp_enable
     pin:
       pca9554: pca9557
@@ -559,7 +560,7 @@ switch:
 
   # 软件静音开关
   - platform: template
-    name: 静音（麦克风）
+    name: Mute
     id: mute
     icon: "mdi:microphone-off"
     optimistic: true
