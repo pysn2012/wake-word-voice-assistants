@@ -537,7 +537,7 @@ script:
 # 开关 (Switches)
 switch:
   - platform: gpio
-    name: "AMP Enable"
+    name: 功放
     id: amp_enable
     pin:
       pca9554: pca9557
@@ -549,7 +549,7 @@ switch:
 
   - platform: gpio
     id: lcd_en
-    name: "LCD EN (PCA bit0)"
+    name: "LCD EN"
     pin:
       pca9554: pca9557
       number: 0
@@ -559,7 +559,7 @@ switch:
 
   # 软件静音开关
   - platform: template
-    name: Mute
+    name: 静音
     id: mute
     icon: "mdi:microphone-off"
     optimistic: true
