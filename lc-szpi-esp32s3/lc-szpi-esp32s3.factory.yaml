@@ -7,8 +7,8 @@ packages:
       on_client_connected:
         - wait_until: # 等待直到蓝牙（BLE）被禁用
             not: ble.enabled
-  # 引入主配置文件，该文件包含了 lc-szpi-esp32c3 设备的完整配置
-  lc-szpi-esp32c3: !include lc-szpi-esp32c3.yaml
+  # 引入主配置文件，该文件包含了 lc-szpi-esp32s3 设备的完整配置
+  lc-szpi-esp32s3: !include lc-szpi-esp32s3.yaml
 
 esphome:
   project:
@@ -23,7 +23,7 @@ http_request: # HTTP 请求组件配置
 
 # 从 GitHub 导入包
 dashboard_import:
-  package_import_url: github://pysn2012/wake-word-voice-assistants/lc-szpi-esp32c3/lc-szpi-esp32c3.yaml@main
+  package_import_url: github://pysn2012/wake-word-voice-assistants/lc-szpi-esp32s3/lc-szpi-esp32s3.yaml@main
 
 wifi:
   # 当 WiFi 连接成功后执行

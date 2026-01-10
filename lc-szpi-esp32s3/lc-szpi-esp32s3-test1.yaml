@@ -26,7 +26,7 @@ pca9554:
   - id: pca9557
     address: 0x19
 
-# 屏幕背光控制 (GPIO2)
+# 屏幕背光控制 (GPIO42)
 output:
   - platform: ledc
     pin: 42

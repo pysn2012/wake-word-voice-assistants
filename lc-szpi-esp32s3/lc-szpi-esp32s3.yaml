@@ -1,7 +1,7 @@
 # 定义可复用的变量
 substitutions:
-  name: lc-szpi-esp32c3
-  friendly_name: lc-szpi-esp32c3
+  name: lc-szpi-esp32s3
+  friendly_name: lc-szpi-esp32s3
   
   # 屏幕显示的各类状态图片
   loading_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/error_240_320.png
@@ -58,10 +58,19 @@ esphome:
             - script.execute: draw_display
 
 esp32:
-  board: esp32-c3-devkitc-02
-  flash_size: 8MB
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  cpu_frequency: 240MHz
   framework:
     type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
 
 api:
   on_client_connected:
@@ -93,35 +102,48 @@ i2c:
   frequency: 100kHz
   scan: false
 
-# 屏幕背光控制 (GPIO2)
+# I/O扩展
+pca9554:
+  - id: pca9557
+    address: 0x19
+
+# 屏幕背光控制 (GPIO42)
 output:
   - platform: ledc
-    pin: GPIO2
+    pin: 42
     id: backlight_output
     inverted: true
 
 light:
   - platform: monochromatic
-    id: led
+    id: Sled
     name: Screen
     icon: "mdi:television"
     entity_category: config
     output: backlight_output
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ALWAYS_ON
     default_transition_length: 250ms
 
 # I2S音频总线配置
 i2s_audio:
   - id: i2s_audio_bus
-    i2s_lrclk_pin: GPIO12      # WS  （录音/播放共用）
-    i2s_bclk_pin: GPIO8       # SCK （录音/播放共用）
-    i2s_mclk_pin: GPIO10
+    i2s_lrclk_pin: GPIO13
+    i2s_bclk_pin: GPIO14
+    i2s_mclk_pin: GPIO38
 
-# 音频编解码器 ( es8311)
+# 音频编解码器 (ADC:ES7210,DAC:es8311)
+audio_adc:
+  - platform: es7210
+    i2c_id: bus_a
+    address: 0x41
+    id: es7210_adc
+    bits_per_sample: 16bit
+    sample_rate: 16000
+
 audio_dac:
   - platform: es8311
-    id: es8311_dac
     i2c_id: bus_a
+    id: es8311_dac
     address: 0x18
     bits_per_sample: 16bit
     sample_rate: 48000
@@ -130,19 +152,20 @@ microphone:
   - platform: i2s_audio
     id: box_mic
     i2s_audio_id: i2s_audio_bus
+    i2s_din_pin: GPIO12
     adc_type: external
-    i2s_din_pin: GPIO7
-    bits_per_sample: 16bit
+    channel: left
+    pdm: false
     sample_rate: 16000
-    # channel: left
+    bits_per_sample: 16bit
 
 speaker:
   - platform: i2s_audio
     id: box_speaker
     i2s_audio_id: i2s_audio_bus
+    i2s_dout_pin: GPIO45
     dac_type: external
-    i2s_dout_pin: GPIO11
-    bits_per_sample: 16bit
+    audio_dac: es8311_dac
     sample_rate: 48000
     channel: mono
 
@@ -150,14 +173,13 @@ speaker:
 media_player:
   - platform: speaker
     name: None
-    id: speaker_media_player
-    volume_min: 0.5
-    volume_max: 0.8
+    id: external_media_player
     announcement_pipeline:
       speaker: box_speaker
-      format: FLAC
+      format: WAV
       sample_rate: 48000
       num_channels: 1
+    buffer_size: 250000
     files:
       - id: timer_finished_sound
         file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/sounds/timer_finished.flac
@@ -515,14 +537,26 @@ script:
 
 # 开关 (Switches)
 switch:
-  # 音频放大器芯片NS4150B的EN引脚GPIO13，低电平关闭，高电平打开
   - platform: gpio
-    name: Speaker Enable
-    # inverted: yes
-    icon: "mdi:speaker"
-    entity_category: config
-    pin: GPIO13
+    name: "AMP Enable"
+    id: amp_enable
+    pin:
+      pca9554: pca9557
+      number: 1
+      mode:
+        output: true
+      inverted: false
     restore_mode: RESTORE_DEFAULT_ON
+
+  - platform: gpio
+    id: lcd_en
+    name: "LCD EN (PCA bit0)"
+    pin:
+      pca9554: pca9557
+      number: 0
+      mode: { output: true }
+      inverted: true
+    restore_mode: ALWAYS_ON 
 
   # 软件静音开关
   - platform: template
@@ -733,7 +767,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_request).state.length()>32) {
+        if(id(text_request).state.length()>37) {
           std::string name = id(text_request).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_request).state = (truncated+"...").c_str();
@@ -743,7 +777,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_response).state.length()>32) {
+        if(id(text_response).state.length()>37) {
           std::string name = id(text_response).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_response).state = (truncated+"...").c_str();
@@ -770,17 +804,16 @@ color:
 
 # SPI总线配置
 spi:
-  id: spi_bus  # 定义SPI总线ID，供显示屏引用
-  clk_pin: GPIO3
-  mosi_pin: GPIO5
+  - id: spi_bus
+    clk_pin: GPIO41
+    mosi_pin: GPIO40
 
 # 屏幕配置
 display:
   - platform: mipi_spi
     id: szpi_lcd
     model: ST7789V
-    dc_pin: GPIO6
-    cs_pin: GPIO4
+    dc_pin: GPIO39
     invert_colors: true
     update_interval: never
     # 定义了多个显示页面，每个页面是一个独立的绘制函数
