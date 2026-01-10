@@ -4,7 +4,9 @@
 
 详细教程可查阅我的微信公众号：
 
-
+```markdown
+![微信二维码](https://raw.githubusercontent.com/pysn2012/wake-word-voice-assistants/main/casita/wx.jpg)
+```
 
 #### 1、仓库说明
 
