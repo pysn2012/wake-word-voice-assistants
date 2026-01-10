@@ -535,29 +535,6 @@ script:
           else:
             - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
 
-sensor:
-  - platform: adc
-    pin: GPIO4
-    name: "Battery Voltage"
-    id: battery_voltage
-    attenuation: 12db
-    accuracy_decimals: 2
-    update_interval: 10s
-    unit_of_measurement: "V"
-    icon: mdi:battery-medium
-    filters:
-      - multiply: 2.0
-      - median:
-          window_size: 7
-          send_every: 7
-          send_first_at: 1
-      - throttle: 1min
-    on_value:
-      then:
-        - sensor.template.publish:
-            id: battery_percentage
-            state: !lambda 'return x;'
-
 # 开关 (Switches)
 switch:
   - platform: gpio
