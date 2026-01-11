@@ -31,7 +31,7 @@ jobs:
           # 进入配置文件目录
           cd unihiker-k10
           # 编译固件，生成bin文件
-          esphome compile unihiker-k10-test2.yaml
+          esphome compile unihiker-k10-cameratest.yaml
 
       # 步骤5：动态查找编译产物
       - name: 动态查找 firmware.bin

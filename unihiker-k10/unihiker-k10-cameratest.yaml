@@ -1,0 +1,124 @@
+esphome:
+  name: unihiker-k10
+  friendly_name: Unihiker-k10
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+# 启用日志
+logger:
+
+# I2C总线
+i2c:
+  id: i2c_a
+  scl: GPIO48
+  sda: GPIO47
+  frequency: 100kHz
+  scan: false
+
+esp32_camera:
+  name: My Camera
+  external_clock:
+    pin: GPIO7            # XCLK_GPIO_NUM
+    frequency: 20MHz
+  i2c_id: i2c_a
+  data_pins: [GPIO8, GPIO10, GPIO11, GPIO9, GPIO18, GPIO16, GPIO15, GPIO6]
+  vsync_pin: GPIO4
+  href_pin: GPIO5
+  pixel_clock_pin: GPIO17 # PCLK_GPIO_NUM
+  # power_down_pin: -1    # PWDN_GPIO_NUM (未使用)
+  # reset_pin: -1         # RESET_GPIO_NUM (未使用)
+  resolution: 320x240     # QVGA - 分辨率
+  jpeg_quality: 15        # 适合高分辨率的质量设置 (10=最高质量, 63=最低质量)
+  horizontal_mirror: true # 左右翻转图像(无效)
+  # 图像调整参数 - 改善亮度
+  brightness: 1           # 亮度调整 (-2 到 2, 默认0)
+  contrast: 1             # 对比度调整 (-2 到 2, 默认0)
+  saturation: 0           # 饱和度调整 (-2 到 2, 默认0)
+  # 自动曝光和增益控制
+  aec_mode: auto          # 自动曝光控制
+  aec2: true              # 启用高级自动曝光
+  ae_level: 1             # 自动曝光级别 (-2 到 2, 默认0)
+  agc_mode: auto          # 自动增益控制
+  agc_gain_ceiling: 16x   # 增益上限 (2x, 4x, 8x, 16x, 32x, 64x, 128x)
+  wb_mode: auto           # 自动白平衡
+  
+
+# XL9535 I/O 扩展器配置
+xl9535:
+  - id: xl9535_hub
+    address: 0x20
+    i2c_id: i2c_a
+
+# 背光输出：使用 XL9535 的 Pin 0
+output:
+  - platform: gpio
+    id: screen_backlight
+    pin:
+      xl9535: xl9535_hub
+      number: 0          # 对应 P0
+      mode: OUTPUT       # 必须设为输出
+      inverted: false    # 非反转：写 HIGH = 开启背光
+
+# 开关
+switch:
+  # 背光开关
+  - platform: output
+    name: "Screen Backlight"
+    output: screen_backlight
+    restore_mode: ALWAYS_ON  # 启动时自动开启背光
+
+# 图像资源 (Images): 从URL下载并缓存到设备Flash中
+image:
+  - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/listening_240_320.png
+    id: casita_listening
+    resize: 240x320
+    type: RGB
+    transparency: alpha_channel
+
+color:
+  - id: my_red
+    red: 100%
+    green: 0%
+    blue: 0%
+
+# SPI总线配置（在此处设置SPI速度）
+spi:
+  id: spi_bus  # 定义SPI总线ID，供显示屏引用
+  clk_pin: GPIO12
+  mosi_pin: GPIO21
+  interface: spi2
+
+# 屏幕配置（修正平台参数）
+display:
+  - platform: ili9xxx
+    model: ILI9341
+    cs_pin: GPIO14
+    dc_pin: GPIO13
+    spi_id: spi_bus
+    invert_colors: false
+    show_test_card: false
+    dimensions:
+      width: 240
+      height: 320
+    transform:
+      mirror_x: false
+      mirror_y: true
+
+    # 基础图形绘制
+    lambda: |-
+      it.rectangle(0, 0, it.get_width(), it.get_height(), id(my_red));
+      it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
+
