@@ -2,15 +2,12 @@ esphome:
   name: unihiker-k10
   friendly_name: Unihiker-k10
   on_boot:  # 开机启动逻辑
-    priority: 600  # 优先级高于摄像头初始化（摄像头初始化优先级~700）
+  on_boot:
+    priority: 600
     then:
-      - output.set_level:  # 第一步：拉低RST引脚（复位触发）
-          id: camera_rst_pin
-          level: 0%
-      - delay: 100ms       # 第二步：保持低电平100ms（复位延时）
-      - output.set_level:  # 第三步：拉高RST引脚（复位完成）
-          id: camera_rst_pin
-          level: 100%
+      - output.turn_off: camera_rst_pin  # 拉低（替代level: 0%）
+      - delay: 100ms
+      - output.turn_on: camera_rst_pin   # 拉高（替代level: 100%）
 
 esp32:
   board: esp32-s3-devkitc-1
