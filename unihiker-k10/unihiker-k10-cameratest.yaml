@@ -1,6 +1,16 @@
 esphome:
   name: unihiker-k10
   friendly_name: Unihiker-k10
+  on_boot:  # 开机启动逻辑
+    priority: 600  # 优先级高于摄像头初始化（摄像头初始化优先级~700）
+    then:
+      - output.set_level:  # 第一步：拉低RST引脚（复位触发）
+          id: camera_rst_pin
+          level: 0%
+      - delay: 100ms       # 第二步：保持低电平100ms（复位延时）
+      - output.set_level:  # 第三步：拉高RST引脚（复位完成）
+          id: camera_rst_pin
+          level: 100%
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -71,6 +81,14 @@ output:
       number: 0          # 对应 P0
       mode: OUTPUT       # 必须设为输出
       inverted: false    # 非反转：写 HIGH = 开启背光
+  # 2. 摄像头复位（新增）
+  - platform: gpio
+    id: camera_rst_pin
+    pin:
+      xl9535: xl9535_hub
+      number: 1          # XL9535 P1（摄像头RST对应引脚）
+      mode: OUTPUT
+      inverted: false    # 电平非反转：HIGH=拉高，LOW=拉低
 
 # 开关
 switch:
