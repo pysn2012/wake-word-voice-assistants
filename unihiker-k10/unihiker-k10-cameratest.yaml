@@ -2,7 +2,6 @@ esphome:
   name: unihiker-k10
   friendly_name: Unihiker-k10
   on_boot:  # 开机启动逻辑
-  on_boot:
     priority: 600
     then:
       - output.turn_off: camera_rst_pin  # 拉低（替代level: 0%）

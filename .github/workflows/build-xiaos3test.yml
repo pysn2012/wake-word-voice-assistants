@@ -25,6 +25,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install esphome
 
+      # 步骤4：生成 secrets.yaml（若你使用 GitHub 密钥方案，保留此步骤；手动创建则注释）
+      - name: 生成 ESPHome secrets.yaml 文件
+        run: |
+          cd devices/Under_Development/Modular
+          cat > secrets.yaml << EOF
+          wifi_ssid: "${{ secrets.WIFI_SSID }}"
+          wifi_password: "${{ secrets.WIFI_PASSWORD }}"
+          EOF
+
       # 步骤4：编译XIAO-ESP32S3固件
       - name: 编译固件
         run: |
