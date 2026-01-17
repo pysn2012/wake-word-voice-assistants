@@ -56,19 +56,20 @@ esp32_camera:
   pixel_clock_pin: GPIO13 # PCLK_GPIO_NUM
   # power_down_pin: -1    # PWDN_GPIO_NUM (未使用)
   # reset_pin: -1         # RESET_GPIO_NUM (未使用)
-  resolution: 320x240     # QVGA - 分辨率
+  resolution: 640x480     # QVGA - 分辨率
   jpeg_quality: 15        # 适合高分辨率的质量设置 (10=最高质量, 63=最低质量)
-  horizontal_mirror: true # 左右翻转图像(无效)
+  vertical_flip: false    # 上下翻转图像
+  horizontal_mirror: true # 左右翻转图像
   # 图像调整参数 - 改善亮度
   brightness: 1           # 亮度调整 (-2 到 2, 默认0)
-  contrast: 1             # 对比度调整 (-2 到 2, 默认0)
+  contrast: 0             # 对比度调整 (-2 到 2, 默认0)
   saturation: 0           # 饱和度调整 (-2 到 2, 默认0)
   # 自动曝光和增益控制
   aec_mode: auto          # 自动曝光控制
   aec2: true              # 启用高级自动曝光
   ae_level: 1             # 自动曝光级别 (-2 到 2, 默认0)
   agc_mode: auto          # 自动增益控制
-  agc_gain_ceiling: 16x   # 增益上限 (2x, 4x, 8x, 16x, 32x, 64x, 128x)
+  agc_gain_ceiling: 2x   # 增益上限 (2x, 4x, 8x, 16x, 32x, 64x, 128x)
   wb_mode: auto           # 自动白平衡
   
 
