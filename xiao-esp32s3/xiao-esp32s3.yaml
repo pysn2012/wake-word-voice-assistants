@@ -123,6 +123,9 @@ microphone:
     adc_type: external
     i2s_din_pin: GPIO41
     pdm: true
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
 
 speaker:
   - platform: i2s_audio
