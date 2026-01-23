@@ -421,14 +421,14 @@ script:
             int active_pixels = round( 60 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
             if (active_pixels > 0){
               id(oled128).filled_rectangle(0 , 25 , 60 , 15 , Color::WHITE );
-              id(oled128).filled_rectangle(0 , 26 , active_pixels , 13 , id(active_timer_color) );
+              id(oled128).filled_rectangle(0 , 26 , active_pixels , 13 , Color::WHITE );
             }
           } else if (id(global_is_timer)){
             id(fetch_first_timer).execute();
             int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
             if (active_pixels > 0){
               id(oled128).filled_rectangle(0 , 25 , 60 , 15 , Color::WHITE );
-              id(oled128).filled_rectangle(0 , 26 , active_pixels , 13 , id(paused_timer_color) );
+              id(oled128).filled_rectangle(0 , 26 , active_pixels , 13 , Color::WHITE );
             }
           }
   # 绘制活跃定时器部件脚本
