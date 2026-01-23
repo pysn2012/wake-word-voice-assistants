@@ -113,6 +113,9 @@ i2c:
 
 # 定义 I2S 音频总线（用于输出）
 i2s_audio:
+  - id: i2s_mic
+    i2s_lrclk_pin: GPIO41
+    i2s_bclk_pin:  GPIO42
   - id: i2s_out_bus
     i2s_lrclk_pin: GPIO9    # ← LRC / WS
     i2s_bclk_pin: GPIO4     # ← BCLK
@@ -120,8 +123,9 @@ i2s_audio:
 microphone:
   - platform: i2s_audio
     id: box_mic
+    i2s_audio_id: i2s_mic
     adc_type: external
-    i2s_din_pin: GPIO41
+    i2s_din_pin: GPIO41 # 必须和i2s_lrclk_pin一致（PDM模式下）
     pdm: true
     sample_rate: 16000
     bits_per_sample: 16bit
