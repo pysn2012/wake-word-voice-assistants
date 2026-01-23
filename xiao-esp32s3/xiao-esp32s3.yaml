@@ -299,6 +299,7 @@ voice_assistant:
 
 # 脚本 (Scripts): 封装了可重用的逻辑块
 script:
+  # 核心脚本：根据当前状态（WiFi/HA连接、语音助手阶段）决定显示哪个页面
   - id: draw_display
     then:
       - if:
@@ -314,60 +315,148 @@ script:
                         api.connected:
                       then:
                         - lambda: |
-                            // 根据阶段显示对应文字
-                            std::string status_text = "Idle";
                             switch(id(voice_assistant_phase)) {
                               case ${voice_assist_listening_phase_id}:
-                                status_text = "Listening";
+                                id(oled128).show_page(listening_page);
+                                id(oled128).update();
                                 break;
                               case ${voice_assist_thinking_phase_id}:
-                                status_text = "Thinking";
+                                id(oled128).show_page(thinking_page);
+                                id(oled128).update();
                                 break;
                               case ${voice_assist_replying_phase_id}:
-                                status_text = "Replying";
+                                id(oled128).show_page(replying_page);
+                                id(oled128).update();
                                 break;
                               case ${voice_assist_error_phase_id}:
-                                status_text = "Error";
+                                id(oled128).show_page(error_page);
+                                id(oled128).update();
                                 break;
                               case ${voice_assist_muted_phase_id}:
-                                status_text = "Muted";
+                                id(oled128).show_page(muted_page);
+                                id(oled128).update();
                                 break;
                               case ${voice_assist_not_ready_phase_id}:
-                                status_text = "HA Disconnected";
+                                id(oled128).show_page(no_ha_page);
+                                id(oled128).update();
                                 break;
                               case ${voice_assist_timer_finished_phase_id}:
-                                status_text = "Timer Finished";
+                                id(oled128).show_page(timer_finished_page);
+                                id(oled128).update();
                                 break;
                               default:
-                                status_text = "Idle";
+                                id(oled128).show_page(idle_page);
+                                id(oled128).update();
                             }
-                            // 绘制黑底白字的状态文本
-                            id(oled128).fill(Color(${bg_color}));
-                            id(oled128).printf(0, 0, id(font_main), Color(${text_color}), "Status: %s", status_text.c_str());
-                            // 显示请求/回复文本（可选）
-                            if(id(text_request).state.length() > 0) {
-                              id(oled128).printf(0, 20, id(font_main), Color(${text_color}), "Req: %s", id(text_request).state.c_str());
-                            }
-                            if(id(text_response).state.length() > 0) {
-                              id(oled128).printf(0, 40, id(font_main), Color(${text_color}), "Res: %s", id(text_response).state.c_str());
-                            }
-                            id(oled128).update();
                       else:
-                        - lambda: |
-                            id(oled128).fill(Color(${bg_color}));
-                            id(oled128).printf(0, 0, id(font_main), Color(${text_color}), "HA Disconnected");
-                            id(oled128).update();
+                        - display.page.show: no_ha_page
+                        - component.update: oled128
                 else:
-                  - lambda: |
-                      id(oled128).fill(Color(${bg_color}));
-                      id(oled128).printf(0, 0, id(font_main), Color(${text_color}), "WiFi Disconnected");
-                      id(oled128).update();
+                  - display.page.show: no_wifi_page
+                  - component.update: oled128
           else:
-            - lambda: |
-                id(oled128).fill(Color(${bg_color}));
-                id(oled128).printf(0, 0, id(font_main), Color(${text_color}), "Initializing...");
-                id(oled128).update();
+            - display.page.show: initializing_page
+            - component.update: oled128
 
+  # 获取第一个活跃定时器脚本
+  - id: fetch_first_active_timer
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          auto output_timer = timers.begin()->second;
+          for (auto &iterable_timer : timers) {
+            if (iterable_timer.second.is_active && iterable_timer.second.seconds_left <= output_timer.seconds_left) {
+              output_timer = iterable_timer.second;
+            }
+          }
+          id(global_first_active_timer) = output_timer;
+  
+  # 检查是否有活跃定时器脚本
+  - id: check_if_timers_active
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          bool output = false;
+          if (timers.size() > 0) {
+            for (auto &iterable_timer : timers) {
+              if(iterable_timer.second.is_active) {
+                output = true;
+              }
+            }
+          }
+          id(global_is_timer_active) = output;
+  
+  # 获取第一个定时器脚本
+  - id: fetch_first_timer
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          auto output_timer = timers.begin()->second;
+          for (auto &iterable_timer : timers) {
+            if (iterable_timer.second.seconds_left <= output_timer.seconds_left) {
+              output_timer = iterable_timer.second;
+            }
+          }
+          id(global_first_timer) = output_timer;
+  
+  # 检查是否有定时器脚本
+  - id: check_if_timers
+    then:
+      - lambda: |
+          const auto timers = id(va).get_timers();
+          bool output = false;
+          if (timers.size() > 0) {
+            output = true;
+          }
+          id(global_is_timer) = output;
+
+  # 绘制定时器时间线脚本
+  - id: draw_timer_timeline
+    then:
+      - lambda: |
+          id(check_if_timers_active).execute();
+          id(check_if_timers).execute();
+          if (id(global_is_timer_active)){
+            id(fetch_first_active_timer).execute();
+            int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
+            if (active_pixels > 0){
+              id(oled128).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(oled128).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
+            }
+          } else if (id(global_is_timer)){
+            id(fetch_first_timer).execute();
+            int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
+            if (active_pixels > 0){
+              id(oled128).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(oled128).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
+            }
+          }
+  # 绘制活跃定时器部件脚本
+  - id: draw_active_timer_widget
+    then:
+      - lambda: |
+          id(check_if_timers_active).execute();
+          if (id(global_is_timer_active)){
+            id(oled128).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
+            id(oled128).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
+
+            id(fetch_first_active_timer).execute();
+            int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
+            int minutes_left = floor((id(global_first_active_timer).seconds_left - hours_left * 3600) / 60);
+            int seconds_left = id(global_first_active_timer).seconds_left - hours_left * 3600 - minutes_left * 60 ;
+            auto display_hours = (hours_left < 10 ? "0" : "") + std::to_string(hours_left);
+            auto display_minute = (minutes_left < 10 ? "0" : "") + std::to_string(minutes_left);
+            auto display_seconds = (seconds_left  < 10 ? "0" : "") + std::to_string(seconds_left) ;
+
+            std::string display_string = "";
+            if (hours_left > 0) {
+              display_string = display_hours + ":" + display_minute;
+            } else {
+              display_string = display_minute + ":" + display_seconds;
+            }
+            id(oled128).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
+          }
+  # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
     then:
       - if:
@@ -388,7 +477,7 @@ script:
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
-
+  # 根据配置的位置停止mWW或流式唤醒词
   - id: stop_wake_word
     then:
       - if:
@@ -402,7 +491,7 @@ script:
             lambda: return id(wake_word_engine_location).state == "On device";
           then:
             - micro_wake_word.stop:
-
+  # 根据软件静音开关的状态，将语音助手阶段设置为空闲或静音
   - id: set_idle_or_mute_phase
     then:
       - if:
@@ -594,22 +683,10 @@ text_sensor:
 
 # 颜色定义 (Colors): 将HEX颜色值定义为ID，方便在显示逻辑中引用
 color:
-  - id: idle_color
-    hex: ${idle_illustration_background_color}
-  - id: listening_color
-    hex: ${listening_illustration_background_color}
-  - id: thinking_color
-    hex: ${thinking_illustration_background_color}
-  - id: replying_color
-    hex: ${replying_illustration_background_color}
-  - id: loading_color
-    hex: ${loading_illustration_background_color}
-  - id: error_color
-    hex: ${error_illustration_background_color}
-  - id: active_timer_color
-    hex: "26ed3a"
-  - id: paused_timer_color
-    hex: "3b89e3"
+  - id: bg_color
+    hex: ${bg_color}
+  - id: text_color
+    hex: ${text_color}
 
 # 显示屏 (Display): OLED
 display:
@@ -618,7 +695,68 @@ display:
     model: "SSD1306 128x64"
     address: 0x3C
     update_interval: never
-    # 备用默认绘制（核心绘制逻辑在draw_display脚本中）
-    lambda: |-
-      it.fill(Color(${bg_color}));
-      it.printf(0, 0, id(font_main), Color(${text_color}), "Initializing...");
+    # 定义了多个显示页面，每个页面是一个独立的绘制函数
+    pages:
+      # 空闲页面
+      - id: idle_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "idle");
+          id(draw_timer_timeline).execute();
+          id(draw_active_timer_widget).execute();
+      # 监听页面
+      - id: listening_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "listening");
+          id(draw_timer_timeline).execute();
+      # 思考页面
+      - id: thinking_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "thinking");
+          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
+          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
+          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
+          id(draw_timer_timeline).execute();
+      # 回复页面
+      - id: replying_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "replying");
+          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
+          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
+          it.filled_rectangle(20 , 190 , 280 , 30 , Color::WHITE );
+          it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );
+          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
+          it.printf(30, 195, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
+          id(draw_timer_timeline).execute();
+      # 定时器结束页面
+      - id: timer_finished_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "timer_finished");
+      # 错误页面
+      - id: error_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "error");
+      # 无Home Assistant页面
+      - id: no_ha_page
+        lambda: |-
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "no_ha");
+      # 无WiFi页面
+      - id: no_wifi_page
+        lambda: |-
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "no_wifi");
+      # 初始化页面
+      - id: initializing_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(10, 10, id(font_request), id(text_color), "%s", "initializing");
+      # 静音页面
+      - id: muted_page
+        lambda: |-
+          it.fill(id(bg_color));
+          id(draw_timer_timeline).execute();
+          id(draw_active_timer_widget).execute();
