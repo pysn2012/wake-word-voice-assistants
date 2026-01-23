@@ -130,9 +130,9 @@ speaker:
     i2s_audio_id: i2s_out_bus
     i2s_dout_pin: GPIO3
     dac_type: external
-    sample_rate: 48000
+    sample_rate: 16000
     bits_per_sample: 16bit
-    channel: left
+    channel: right
     buffer_duration: 100ms
 
 # 媒体播放器，用于播放TTS和提示音
@@ -145,7 +145,7 @@ media_player:
     announcement_pipeline:
       speaker: box_speaker
       format: FLAC
-      sample_rate: 48000
+      sample_rate: 16000
       num_channels: 1
     files:
       - id: timer_finished_sound
@@ -418,17 +418,17 @@ script:
           id(check_if_timers).execute();
           if (id(global_is_timer_active)){
             id(fetch_first_active_timer).execute();
-            int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
+            int active_pixels = round( 60 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
             if (active_pixels > 0){
-              id(oled128).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(oled128).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
+              id(oled128).filled_rectangle(0 , 25 , 60 , 15 , Color::WHITE );
+              id(oled128).filled_rectangle(0 , 26 , active_pixels , 13 , id(active_timer_color) );
             }
           } else if (id(global_is_timer)){
             id(fetch_first_timer).execute();
             int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
             if (active_pixels > 0){
-              id(oled128).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(oled128).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
+              id(oled128).filled_rectangle(0 , 25 , 60 , 15 , Color::WHITE );
+              id(oled128).filled_rectangle(0 , 26 , active_pixels , 13 , id(paused_timer_color) );
             }
           }
   # 绘制活跃定时器部件脚本
@@ -437,8 +437,8 @@ script:
       - lambda: |
           id(check_if_timers_active).execute();
           if (id(global_is_timer_active)){
-            id(oled128).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
-            id(oled128).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
+            id(oled128).filled_rectangle(20 , 20 , 60 , 50 , Color::WHITE );
+            id(oled128).rectangle(20 , 20 , 60 , 50 , Color::BLACK );
 
             id(fetch_first_active_timer).execute();
             int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
@@ -665,7 +665,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_request).state.length()>52) {
+        if(id(text_request).state.length()>32) {
           std::string name = id(text_request).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_request).state = (truncated+"...").c_str();
@@ -675,7 +675,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_response).state.length()>52) {
+        if(id(text_response).state.length()>32) {
           std::string name = id(text_response).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_response).state = (truncated+"...").c_str();
@@ -715,8 +715,8 @@ display:
         lambda: |-
           it.fill(id(bg_color));
           it.printf(10, 10, id(font_request), id(text_color), "%s", "thinking");
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
+          it.filled_rectangle(20 , 20 , 80 , 20 , Color::WHITE );
+          it.rectangle(20 , 20 , 80 , 20 , Color::BLACK );
           it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
           id(draw_timer_timeline).execute();
       # 回复页面
@@ -724,12 +724,12 @@ display:
         lambda: |-
           it.fill(id(bg_color));
           it.printf(10, 10, id(font_request), id(text_color), "%s", "replying");
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
-          it.filled_rectangle(20 , 190 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );
+          it.filled_rectangle(20 , 20 , 80 , 20 , Color::WHITE );
+          it.rectangle(20 , 20 , 80 , 20 , Color::BLACK );
+          it.filled_rectangle(20 , 40 , 80 , 20 , Color::WHITE );
+          it.rectangle(20 , 40 , 80 , 20 , Color::BLACK );
           it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
-          it.printf(30, 195, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
+          it.printf(30, 45, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
           id(draw_timer_timeline).execute();
       # 定时器结束页面
       - id: timer_finished_page
