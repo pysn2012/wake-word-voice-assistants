@@ -125,7 +125,7 @@ microphone:
     id: box_mic
     i2s_audio_id: i2s_mic
     adc_type: external
-    i2s_din_pin: GPIO41 # 必须和i2s_lrclk_pin一致（PDM模式下）
+    # i2s_din_pin: GPIO41 # 必须和i2s_lrclk_pin一致（PDM模式下）
     pdm: true
     sample_rate: 16000
     bits_per_sample: 16bit
