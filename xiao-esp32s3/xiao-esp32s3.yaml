@@ -510,32 +510,19 @@ switch:
     optimistic: true
     internal: true
     restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - repeat:
+          count: 3
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: timer_finished_sound
+                announcement: true
+            - delay: 1s   # 两次铃声之间的间隔，可调
+      - switch.turn_off: timer_ringing
+
     on_turn_off:
-      # 关闭重复模式并禁用播放列表项之间的暂停间隔
-      - lambda: |-
-              id(speaker_media_player)
-                ->make_call()
-                .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_OFF)
-                .set_announcement(true)
-                .perform();
-              id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 0);
-      # 停止闹钟播放
       - media_player.stop:
           announcement: true
-    on_turn_on:
-      # 开启重复模式，并在播放列表项/重复项之间暂停 1000 毫秒
-      - lambda: |-
-            id(speaker_media_player)
-              ->make_call()
-              .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_ONE)
-              .set_announcement(true)
-              .perform();
-            id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 1000);
-      - media_player.speaker.play_on_device_media_file:
-          media_file: timer_finished_sound
-          announcement: true
-      - delay: 15min
-      - switch.turn_off: timer_ringing
 
 # 选择器 (Select): 允许用户在UI中选择唤醒词引擎运行位置（设备端或HA端）
 select:
@@ -703,10 +690,12 @@ display:
       # 无Home Assistant页面
       - id: no_ha_page
         lambda: |-
+          it.fill(id(bg_color));
           it.printf(25, 20, id(font_main), id(text_color), "%s", "未连接HA");
       # 无WiFi页面
       - id: no_wifi_page
         lambda: |-
+          it.fill(id(bg_color));
           it.printf(25, 20, id(font_main), id(text_color), "%s", "未连接wifi");
       # 初始化页面
       - id: initializing_page
@@ -717,4 +706,5 @@ display:
       - id: muted_page
         lambda: |-
           it.fill(id(bg_color));
+          it.printf(35, 20, id(font_main), id(text_color), "%s", "静音状态");
           id(draw_active_timer_widget).execute();
