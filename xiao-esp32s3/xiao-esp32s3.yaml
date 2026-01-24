@@ -439,7 +439,7 @@ script:
             } else {
               display_string = display_minute + ":" + display_seconds;
             }
-            id(oled128).printf(20, 45, id(font_main), Color::WHITE, "%s", display_string.c_str());
+            id(oled128).printf(32, 45, id(font_main), Color::WHITE, "%s", display_string.c_str());
           }
   # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
@@ -617,9 +617,9 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_request).state.length()>25) {
+        if(id(text_request).state.length()>20) {
           std::string name = id(text_request).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),24);
+          std::string truncated = esphome::str_truncate(name.c_str(),19);
           id(text_request).state = (truncated+"...").c_str();
         }
 
@@ -627,9 +627,9 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_response).state.length()>25) {
+        if(id(text_response).state.length()>20) {
           std::string name = id(text_response).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),24);
+          std::string truncated = esphome::str_truncate(name.c_str(),19);
           id(text_response).state = (truncated+"...").c_str();
         }
 
@@ -665,17 +665,17 @@ display:
       - id: thinking_page
         lambda: |-
           it.fill(id(bg_color));
-          it.printf(30, 1, id(font_main), id(text_color), "%s", "思考状态");
-          it.rectangle(1 , 18 , 128 , 25 , Color::WHITE );
-          it.printf(5, 20, id(font_main), Color::WHITE, "%s", id(text_request).state.c_str());
+          it.printf(30, 0, id(font_main), id(text_color), "%s", "思考状态");
+          it.rectangle(0 , 20 , 126 , 25 , Color::WHITE );
+          it.printf(5, 22, id(font_main), Color::WHITE, "%s", id(text_request).state.c_str());
           id(draw_active_timer_widget).execute();
       # 回复页面
       - id: replying_page
         lambda: |-
           it.fill(id(bg_color));
           it.printf(30, 1, id(font_main), id(text_color), "%s", "回复状态");
-          it.rectangle(1 , 18 , 128 , 25 , Color::WHITE );
-          it.printf(5, 20, id(font_main), Color::WHITE, "%s", id(text_response).state.c_str());
+          it.rectangle(1 , 20 , 126 , 25 , Color::WHITE );
+          it.printf(5, 22, id(font_main), Color::WHITE, "%s", id(text_response).state.c_str());
           id(draw_active_timer_widget).execute();
       # 定时器结束页面
       - id: timer_finished_page
