@@ -192,27 +192,23 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
   on_stt_end:
+    # 发布识别文本（给 UI / HA）
+    - text_sensor.template.publish:
+        id: text_request
+        state: !lambda return x;
+
     # 执行语音命令（核心逻辑）
     - lambda: |-
         std::string cmd = x;
         ESP_LOGI("VA", "STT: %s", cmd.c_str());
-        bool handled = false;
         if (cmd.find("播放") != std::string::npos) {
           id(play_music).execute();
-          handled = true;
         } else if (cmd.find("暂停") != std::string::npos) {
           id(pause_music).execute();
-          handled = true;
         } else if (cmd.find("下一首") != std::string::npos) {
           id(next_song).execute();
-          handled = true;
         } else if (cmd.find("上一首") != std::string::npos) {
           id(prev_song).execute();
-          handled = true;
-        }
-        if (handled) {
-          ESP_LOGI("VA", "Local command handled, stopping voice assistant pipeline");
-          id(va).stop();
         }
     - script.execute: draw_display
 
@@ -319,7 +315,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "On device";
+              - lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
@@ -328,7 +324,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+              - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
@@ -337,13 +333,13 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+            lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "On device";
+            lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
 

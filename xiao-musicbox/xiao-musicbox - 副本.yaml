@@ -191,20 +191,12 @@ voice_assistant:
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 2.0
-  
   on_stt_end:
-    # 发布识别文本
-    - text_sensor.template.publish:
-        id: text_request
-        state: !lambda return x;
-
-    # 执行语音命令
+    # 执行语音命令（核心逻辑）
     - lambda: |-
         std::string cmd = x;
         ESP_LOGI("VA", "STT: %s", cmd.c_str());
-        
         bool handled = false;
-        
         if (cmd.find("播放") != std::string::npos) {
           id(play_music).execute();
           handled = true;
@@ -218,19 +210,16 @@ voice_assistant:
           id(prev_song).execute();
           handled = true;
         }
-        
         if (handled) {
           ESP_LOGI("VA", "Local command handled, stopping voice assistant pipeline");
           id(va).stop();
         }
-          
     - script.execute: draw_display
 
   on_client_connected:
-    - lambda: 'id(init_in_progress) = false;'
+    - lambda: id(init_in_progress) = false;
     - script.execute: start_wake_word
     - script.execute: draw_display
-    
   on_client_disconnected:
     - script.execute: stop_wake_word
     - script.execute: draw_display
@@ -330,7 +319,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "On device";
+              - lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
@@ -339,7 +328,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+              - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
@@ -348,13 +337,13 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+            lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "On device";
+            lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
 
@@ -431,29 +420,6 @@ font:
     size: 15
     glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
-
-# 文本传感器 (Text Sensors): 用于在UI中显示请求和回复的文本
-# 包含了截断过长文本的逻辑
-text_sensor:
-  - id: text_request
-    platform: template
-    on_value:
-      lambda: |-
-        if(id(text_request).state.length()>20) {
-          std::string name = id(text_request).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),19);
-          id(text_request).state = (truncated+"...").c_str();
-        }
-
-  - id: text_response
-    platform: template
-    on_value:
-      lambda: |-
-        if(id(text_response).state.length()>20) {
-          std::string name = id(text_response).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),19);
-          id(text_response).state = (truncated+"...").c_str();
-        }
 
 # 颜色定义 (Colors): 将HEX颜色值定义为ID，方便在显示逻辑中引用
 color:
