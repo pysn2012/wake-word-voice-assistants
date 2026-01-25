@@ -1,0 +1,508 @@
+---
+substitutions:
+  name: xiao-musicbox
+  friendly_name: xiao-musicbox
+  
+  # 仅有2种颜色
+  bg_color: "000000"    # 黑色背景
+  text_color: "FFFFFF"  # 白色文字
+
+  # 语音助手不同阶段的ID，用于内部逻辑判断和显示切换
+  music_home_phase_id: "1"
+  music_playing_phase_id: "2"
+  music_paused_phase_id: "3"
+
+  # 允许显示的字符集。此列表非常庞大，包含了多语言字符。
+  allowed_characters: |-
+    音乐盒播放暂停正在已呃出错了未连接加载中状态一二三·！@#￥%…&*（）—+-=、|【{}】；：‘“”，《。》/？℃℉￡ abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~`!$^()_[]\;:'",<.>?
+  
+  # 字体配置
+  font_glyphsets: "GF_Chinese_Simplified"  # 为中文字符集指定字形集
+  # 使用思源黑体简体中文版
+  font_family: "Noto Sans SC"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.5.0  # 要求的最低ESPHome版本
+  name_add_mac_suffix: true  # 设备名后缀添加MAC地址，避免冲突
+  on_boot:  # 开机启动逻辑
+    priority: 600
+    then:
+      - script.execute: draw_display
+      - delay: 30s
+      - if:
+          condition:
+            lambda: return id(init_in_progress);
+          then:
+            - lambda: id(init_in_progress) = false;
+            - script.execute: draw_display
+
+esp32:
+  board: seeed_xiao_esp32s3
+  flash_size: 8MB
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+api:
+  on_client_connected:
+    - script.execute: draw_display
+  on_client_disconnected:
+    - script.execute: draw_display
+
+ota:
+  - platform: esphome
+    id: ota_esphome
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+
+wifi:
+  ap:
+  on_connect:
+    - script.execute: draw_display
+  on_disconnect:
+    - script.execute: draw_display
+
+captive_portal:
+
+# 按钮：GPIO0 作为左上角按钮，长按10秒触发恢复出厂设置
+button:
+  - platform: factory_reset
+    id: factory_reset_btn
+    internal: true
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    id: left_top_button
+    internal: true
+    on_multi_click:
+      - timing:
+          - ON for at least 50ms
+          - OFF for at least 50ms
+        then:
+          - switch.turn_off: timer_ringing
+      - timing:
+          - ON for at least 10s
+        then:
+          - button.press: factory_reset_btn
+
+# I2C总线 (用于触摸屏等，但本配置未显式使用)
+i2c:
+  id: i2c_bus
+  scl: GPIO6
+  sda: GPIO5
+
+# 定义 I2S 音频总线
+i2s_audio:
+  - id: i2s_mic
+    i2s_lrclk_pin: GPIO42   # PDM_CLK
+  - id: i2s_out_bus
+    i2s_lrclk_pin: GPIO9    # ← LRC / WS
+    i2s_bclk_pin: GPIO4     # ← BCLK
+
+# 定义 PDM 麦克风
+microphone:
+  - platform: i2s_audio
+    id: box_mic
+    i2s_audio_id: i2s_mic
+    adc_type: external
+    i2s_din_pin: GPIO41     # PDM DATA
+    pdm: true
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+
+# 定义 MAX 98357A
+speaker:
+  - platform: i2s_audio
+    id: box_speaker
+    i2s_audio_id: i2s_out_bus
+    i2s_dout_pin: GPIO3
+    dac_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: right           # MAX 98357A默认是右声道
+    buffer_duration: 100ms
+
+# 媒体播放器，用于播放TTS和提示音
+media_player:
+  - platform: speaker
+    name: None
+    id: speaker_media_player
+    volume_min: 0.5
+    volume_max: 0.8
+    announcement_pipeline:
+      speaker: box_speaker
+      format: FLAC
+      sample_rate: 16000
+      num_channels: 1
+    files:
+      - id: timer_finished_sound
+        file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/sounds/timer_finished.flac
+      - id: song1
+        file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/sounds/available.flac
+      - id: song2
+        file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/sounds/computer_ready.flac
+      - id: song3
+        file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/sounds/home_connected.flac
+    on_play:
+      - lambda: id(music_ui_phase) = ${music_playing_phase_id};
+      - script.execute: draw_display
+
+    on_pause:
+      - lambda: id(music_ui_phase) = ${music_paused_phase_id};
+      - script.execute: draw_display
+
+    on_stop:
+      - lambda: id(music_ui_phase) = ${music_home_phase_id};
+      - script.execute: draw_display
+
+    on_idle:
+      - lambda: id(music_ui_phase) = ${music_home_phase_id};
+      - script.execute: draw_display
+
+# 设备端唤醒词引擎 (microWakeWord)，使用 "okay_nabu" 模型
+micro_wake_word:
+  id: mww
+  models:
+    - okay_nabu
+  on_wake_word_detected:
+    # 如果正在播放音乐，先打断
+    - if:
+        condition:
+          media_player.is_playing: speaker_media_player
+        then:
+          - media_player.pause: speaker_media_player
+          - delay: 150ms
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
+
+# 语音助手核心配置
+voice_assistant:
+  id: va
+  microphone: box_mic
+  media_player: speaker_media_player
+  micro_wake_word: mww
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+  on_stt_end:
+    # 发布识别文本（给 UI / HA）
+    - text_sensor.template.publish:
+        id: text_request
+        state: !lambda return x;
+
+    # 执行语音命令（核心逻辑）
+    - lambda: |-
+        std::string cmd = x;
+        ESP_LOGI("VA", "STT: %s", cmd.c_str());
+
+        if (cmd.find("播放") != std::string::npos) {
+          id(play_music).execute();
+        } else if (cmd.find("暂停") != std::string::npos) {
+          id(pause_music).execute();
+        } else if (cmd.find("下一首") != std::string::npos) {
+          id(next_song).execute();
+        } else if (cmd.find("上一首") != std::string::npos) {
+          id(prev_song).execute();
+        }
+    - script.execute: draw_display
+
+  on_client_connected:
+    - lambda: id(init_in_progress) = false;
+    - script.execute: start_wake_word
+    - script.execute: draw_display
+  on_client_disconnected:
+    - script.execute: stop_wake_word
+    - script.execute: draw_display
+
+
+# 脚本 (Scripts): 封装了可重用的逻辑块
+script:
+  # 核心脚本：根据当前状态（WiFi/HA连接、语音助手阶段）决定显示哪个页面
+  - id: draw_display
+    then:
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            - if:
+                condition:
+                  wifi.connected:
+                then:
+                  - if:
+                      condition:
+                        api.connected:
+                      then:
+                        - lambda: |
+                            switch (id(music_ui_phase)) {
+                              case ${music_playing_phase_id}:
+                                id(oled128).show_page(music_playing_page);
+                                break;
+                              case ${music_paused_phase_id}:
+                                id(oled128).show_page(music_paused_page);
+                                break;
+                              case ${music_home_phase_id}:
+                              default:
+                                id(oled128).show_page(music_home_page);
+                                break;
+                            }
+                            id(oled128).update();
+                      else:
+                        - display.page.show: no_ha_page
+                        - component.update: oled128
+                else:
+                  - display.page.show: no_wifi_page
+                  - component.update: oled128
+          else:
+            - display.page.show: initializing_page
+            - component.update: oled128
+  # 绑定音乐库
+  - id: play_current_song
+    then:
+      - lambda: |-
+          int idx = id(current_song_index);
+          ESP_LOGI("MUSIC", "Play song index: %d", idx);
+      - if:
+          condition:
+            lambda: return id(current_song_index) == 0;
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: song1
+      - if:
+          condition:
+            lambda: return id(current_song_index) == 1;
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: song2
+      - if:
+          condition:
+            lambda: return id(current_song_index) == 2;
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: song3
+  # 播放
+  - id: play_music
+    then:
+      - script.execute: play_current_song
+  #暂停
+  - id: pause_music
+    then:
+      - media_player.pause: speaker_media_player
+  # 下一首
+  - id: next_song
+    then:
+      - lambda: |-
+          id(current_song_index) = (id(current_song_index) + 1) % 3;
+      - script.execute: play_current_song
+  # 上一首
+  - id: prev_song
+    then:
+      - lambda: |-
+          id(current_song_index) =
+            (id(current_song_index) + 2) % 3;  // 等价于 -1 取模
+      - script.execute: play_current_song
+
+  # 根据配置的位置启动mWW或流式唤醒词
+  - id: start_wake_word
+    then:
+      - if:
+          condition:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - lambda: return id(wake_word_engine_location).state == "On device";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - micro_wake_word.start:
+      - if:
+          condition:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous:
+  # 根据配置的位置停止mWW或流式唤醒词
+  - id: stop_wake_word
+    then:
+      - if:
+          condition:
+            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.stop:
+      - if:
+          condition:
+            lambda: return id(wake_word_engine_location).state == "On device";
+          then:
+            - micro_wake_word.stop:
+
+# 开关 (Switches)
+
+# 选择器 (Select): 允许用户在UI中选择唤醒词引擎运行位置（设备端或HA端）
+select:
+  - platform: template
+    entity_category: config
+    name: Wake word engine location
+    id: wake_word_engine_location
+    icon: "mdi:account-voice"
+    optimistic: true
+    restore_value: true
+    options:
+      - In Home Assistant
+      - On device
+    initial_option: On device
+
+    on_value:
+      # 防止开机阶段乱切
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            # 切到 HA 端唤醒
+            - if:
+                condition:
+                  lambda: return x == "In Home Assistant";
+                then:
+                  - micro_wake_word.stop
+                  - delay: 300ms
+                  - lambda: id(va).set_use_wake_word(true);
+                  - voice_assistant.start_continuous
+
+            # 切到设备端唤醒
+            - if:
+                condition:
+                  lambda: return x == "On device";
+                then:
+                  - voice_assistant.stop
+                  - delay: 300ms
+                  - lambda: id(va).set_use_wake_word(false);
+                  - micro_wake_word.start
+
+# 全局变量 (Globals): 用于在不同组件间共享状态
+globals:
+  # 初始化标志
+  - id: init_in_progress
+    type: bool
+    restore_value: false
+    initial_value: "true"
+
+  # 音乐 UI 页面状态
+  - id: music_ui_phase
+    type: int
+    restore_value: false
+    initial_value: ${music_home_phase_id}
+
+  # 当前歌曲索引（0~2）
+  - id: current_song_index
+    type: int
+    restore_value: false
+    initial_value: "0"
+
+# 字体 (Fonts)
+font:
+  - file:
+      type: gfonts
+      family: "Noto Sans SC"
+      weight: 400
+      italic: false
+    id: font_main  # 用于显示用户请求文本
+    size: 15
+    glyphs: ${allowed_characters}
+    ignore_missing_glyphs: true
+
+# 文本传感器 (Text Sensors): 用于在UI中显示请求和回复的文本
+# 包含了截断过长文本的逻辑
+text_sensor:
+  - id: text_request
+    platform: template
+    on_value:
+      lambda: |-
+        if(id(text_request).state.length()>20) {
+          std::string name = id(text_request).state.c_str();
+          std::string truncated = esphome::str_truncate(name.c_str(),19);
+          id(text_request).state = (truncated+"...").c_str();
+        }
+
+  - id: text_response
+    platform: template
+    on_value:
+      lambda: |-
+        if(id(text_response).state.length()>20) {
+          std::string name = id(text_response).state.c_str();
+          std::string truncated = esphome::str_truncate(name.c_str(),19);
+          id(text_response).state = (truncated+"...").c_str();
+        }
+
+# 颜色定义 (Colors): 将HEX颜色值定义为ID，方便在显示逻辑中引用
+color:
+  - id: bg_color
+    hex: ${bg_color}
+  - id: text_color
+    hex: ${text_color}
+
+# 显示屏 (Display): OLED
+display:
+  - platform: ssd1306_i2c
+    id: oled128
+    model: "SSD1306 128x64"
+    address: 0x3C
+    update_interval: never
+    # 定义了多个显示页面，每个页面是一个独立的绘制函数
+    pages:
+      # 主页面
+      - id: music_home_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(0, 0, id(font_main), id(text_color), "音乐盒");
+          const char* songs[3] = {"音乐一", "音乐二", "音乐三"};
+          for (int i = 0; i < 3; i++) {
+            if (i == id(current_song_index)) {
+              it.printf(0, 18 + i * 15, id(font_main), Color::WHITE, "> %s", songs[i]);
+            } else {
+              it.printf(0, 18 + i * 15, id(font_main), id(text_color), "  %s", songs[i]);
+            }
+          }
+      # 播放页面
+      - id: music_playing_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(0, 0, id(font_main), id(text_color), "正在播放");
+          it.printf(0, 22, id(font_main), Color::WHITE, "音乐 %d  >", id(current_song_index) + 1 );
+      # 暂停页面
+      - id: music_paused_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(30, 1, id(font_main), id(text_color), "%s", "已暂停");
+          it.printf(0, 22, id(font_main), Color::WHITE, "音乐 %d  =", id(current_song_index) + 1 );
+      # 无Home Assistant页面
+      - id: no_ha_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(25, 20, id(font_main), id(text_color), "%s", "未连接HA");
+      # 无WiFi页面
+      - id: no_wifi_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(25, 20, id(font_main), id(text_color), "%s", "未连接wifi");
+      # 初始化页面
+      - id: initializing_page
+        lambda: |-
+          it.fill(id(bg_color));
+          it.printf(35, 20, id(font_main), id(text_color), "%s", "加载中");
