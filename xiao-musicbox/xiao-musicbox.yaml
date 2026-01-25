@@ -162,10 +162,6 @@ media_player:
       - lambda: id(music_ui_phase) = ${music_paused_phase_id};
       - script.execute: draw_display
 
-    on_stop:
-      - lambda: id(music_ui_phase) = ${music_home_phase_id};
-      - script.execute: draw_display
-
     on_idle:
       - lambda: id(music_ui_phase) = ${music_home_phase_id};
       - script.execute: draw_display
