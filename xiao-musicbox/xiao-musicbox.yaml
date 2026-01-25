@@ -192,11 +192,6 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
   on_stt_end:
-    # 发布识别文本（给 UI / HA）
-    - text_sensor.template.publish:
-        id: text_request
-        state: !lambda return x;
-
     # 执行语音命令（核心逻辑）
     - lambda: |-
         std::string cmd = x;
@@ -425,29 +420,6 @@ font:
     size: 15
     glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
-
-# 文本传感器 (Text Sensors): 用于在UI中显示请求和回复的文本
-# 包含了截断过长文本的逻辑
-text_sensor:
-  - id: text_request
-    platform: template
-    on_value:
-      lambda: |-
-        if(id(text_request).state.length()>20) {
-          std::string name = id(text_request).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),19);
-          id(text_request).state = (truncated+"...").c_str();
-        }
-
-  - id: text_response
-    platform: template
-    on_value:
-      lambda: |-
-        if(id(text_response).state.length()>20) {
-          std::string name = id(text_response).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),19);
-          id(text_response).state = (truncated+"...").c_str();
-        }
 
 # 颜色定义 (Colors): 将HEX颜色值定义为ID，方便在显示逻辑中引用
 color:
