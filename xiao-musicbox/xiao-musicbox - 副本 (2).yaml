@@ -192,26 +192,23 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
   on_stt_end:
+    # 发布识别文本（给 UI / HA）
+    - text_sensor.template.publish:
+        id: text_request
+        state: !lambda return x;
+
     # 执行语音命令（核心逻辑）
     - lambda: |-
         std::string cmd = x;
         ESP_LOGI("VA", "STT: %s", cmd.c_str());
-        bool handled = false;
         if (cmd.find("播放") != std::string::npos) {
           id(play_music).execute();
-          handled = true;
         } else if (cmd.find("暂停") != std::string::npos) {
           id(pause_music).execute();
-          handled = true;
         } else if (cmd.find("下一首") != std::string::npos) {
           id(next_song).execute();
-          handled = true;
         } else if (cmd.find("上一首") != std::string::npos) {
           id(prev_song).execute();
-          handled = true;
-        }
-        if (handled) {
-          id(stop_va_pipeline).execute();
         }
     - script.execute: draw_display
 
@@ -345,10 +342,7 @@ script:
             lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
-  # 定义停止VA
-  - id: stop_va_pipeline
-    then:
-      - voice_assistant.stop:
+
 # 开关 (Switches)
 
 # 选择器 (Select): 允许用户在UI中选择唤醒词引擎运行位置（设备端或HA端）
