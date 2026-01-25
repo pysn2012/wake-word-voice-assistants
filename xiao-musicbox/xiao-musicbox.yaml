@@ -91,11 +91,6 @@ binary_sensor:
     internal: true
     on_multi_click:
       - timing:
-          - ON for at least 50ms
-          - OFF for at least 50ms
-        then:
-          - switch.turn_off: timer_ringing
-      - timing:
           - ON for at least 10s
         then:
           - button.press: factory_reset_btn
