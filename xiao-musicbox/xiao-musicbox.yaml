@@ -202,14 +202,26 @@ voice_assistant:
         std::string cmd = x;
         ESP_LOGI("VA", "STT: %s", cmd.c_str());
 
+        bool handled = false;
+
         if (cmd.find("播放") != std::string::npos) {
           id(play_music).execute();
+          handled = true;
         } else if (cmd.find("暂停") != std::string::npos) {
           id(pause_music).execute();
+          handled = true;
         } else if (cmd.find("下一首") != std::string::npos) {
           id(next_song).execute();
+          handled = true;
         } else if (cmd.find("上一首") != std::string::npos) {
           id(prev_song).execute();
+          handled = true;
+        }
+
+        // ✅ 关键：如果是本地命令，立刻终止 Assist
+        if (handled) {
+          ESP_LOGI("VA", "Local command handled, stopping voice assistant pipeline");
+          id(va).stop();
         }
     - script.execute: draw_display
 
