@@ -191,17 +191,20 @@ voice_assistant:
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 2.0
+  
   on_stt_end:
-    # 发布识别文本（给 UI / HA）
+    # 发布识别文本
     - text_sensor.template.publish:
         id: text_request
         state: !lambda return x;
 
-    # 执行语音命令（核心逻辑）
+    # 执行语音命令
     - lambda: |-
         std::string cmd = x;
         ESP_LOGI("VA", "STT: %s", cmd.c_str());
+        
         bool handled = false;
+        
         if (cmd.find("播放") != std::string::npos) {
           id(play_music).execute();
           handled = true;
@@ -215,16 +218,19 @@ voice_assistant:
           id(prev_song).execute();
           handled = true;
         }
+        
         if (handled) {
           ESP_LOGI("VA", "Local command handled, stopping voice assistant pipeline");
           id(va).stop();
         }
+          
     - script.execute: draw_display
 
   on_client_connected:
-    - lambda: id(init_in_progress) = false;
+    - lambda: 'id(init_in_progress) = false;'
     - script.execute: start_wake_word
     - script.execute: draw_display
+    
   on_client_disconnected:
     - script.execute: stop_wake_word
     - script.execute: draw_display
