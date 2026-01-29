@@ -125,15 +125,24 @@ sensor:
     id: line_adc
 
 # 绿灯黄灯
-light:
+output:
   - platform: gpio
     pin: GPIO43
-    name: "Green Light"
-    restore_mode: ALWAYS_OFF
+    id: green_led
 
   - platform: gpio
     pin: GPIO44
+    id: yellow_led
+
+light:
+  - platform: binary
+    name: "Green Light"
+    output: green_led
+    restore_mode: ALWAYS_OFF
+
+  - platform: binary
     name: "Yellow Light"
+    output: yellow_led
     restore_mode: ALWAYS_OFF
 
 # I2C总线 (OLED)
