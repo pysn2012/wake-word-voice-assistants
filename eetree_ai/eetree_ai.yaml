@@ -752,7 +752,7 @@ display:
           it.fill(id(bg_color));
           it.printf(30, 20, id(font_main), id(text_color), "%s", "聆听状态");
           id(draw_active_timer_widget).execute();
-      # 思考页面
+# 思考页面
       - id: thinking_page
         lambda: |-
           it.fill(id(bg_color));
@@ -770,8 +770,14 @@ display:
               (c & 0xE0) == 0xC0 ? 2 :
               (c & 0xF0) == 0xE0 ? 3 : 4;
             std::string next = line + text.substr(i, len);
-            int w = 0, h = 0;
-            id(font_small).measure_text(next.c_str(), &w, &h);
+            int x1, y1, w, h;
+            it.get_text_bounds(
+              0, y,
+              next.c_str(),
+              id(font_small),
+              esphome::display::TextAlign::TOP_LEFT,
+              &x1, &y1, &w, &h
+            );
             if (w > max_width) {
               it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
               y += line_height;
@@ -785,7 +791,7 @@ display:
             it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
           }
           id(draw_active_timer_widget).execute();
-      # 回复页面
+ # 回复页面
       - id: replying_page
         lambda: |-
           it.fill(id(bg_color));
@@ -803,8 +809,14 @@ display:
               (c & 0xE0) == 0xC0 ? 2 :
               (c & 0xF0) == 0xE0 ? 3 : 4;
             std::string next = line + text.substr(i, len);
-            int w = 0, h = 0;
-            id(font_small).measure_text(next.c_str(), &w, &h);
+            int x1, y1, w, h;
+            it.get_text_bounds(
+              0, y,
+              next.c_str(),
+              id(font_small),
+              esphome::display::TextAlign::TOP_LEFT,
+              &x1, &y1, &w, &h
+            );
             if (w > max_width) {
               it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
               y += line_height;
