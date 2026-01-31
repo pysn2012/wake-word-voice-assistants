@@ -116,8 +116,26 @@ sensor:
     humidity:
       name: "DHT11 Humidity"
     update_interval: 60s
-  # 四位模拟按键（只用 A / B）失败
+  # === 四位模拟按键（只用 A / B） ===
+  - platform: adc
+    pin: GPIO1
+    id: key_adc
+    name: "Key ADC"
+    attenuation: 11db        # 允许测量到 ~3.3V
+    update_interval: 50ms
+    raw: true                # 直接使用 0–4095
+    on_value:
+      then:
+        - lambda: |-
+            int v = (int)x;
 
+            if (v > 3000 && v < 3600) {
+              id(key_state) = 1;   // A键
+            } else if (v > 3700 && v < 4000) {
+              id(key_state) = 2;   // B键
+            } else {
+              id(key_state) = 0;   // 无按键
+            }
 
 # 绿灯黄灯
 output:
@@ -130,34 +148,17 @@ output:
     id: yellow_led
 
 light:
-  # 绿灯
   - platform: binary
     id: green_light
     name: "Green Light"
     output: green_led
     restore_mode: ALWAYS_OFF
-  # 黄灯
+
   - platform: binary
     id: yellow_light
     name: "Yellow Light"
     output: yellow_led
     restore_mode: ALWAYS_OFF
-  # WS2812灯带
-- platform: esp32_rmt_led_strip
-    id: ws2812_strip
-    name: "WS2812 Strip"
-    pin: GPIO2
-    num_leds: 10
-    chipset: WS2812
-    rgb_order: GRB
-    restore_mode: ALWAYS_OFF
-    effects:
-      - pulse:
-          name: "Listening Breathing"
-          transition_length: 1.2s
-          update_interval: 1.2s
-          min_brightness: 10%
-          max_brightness: 70%
 
 # I2C总线 (OLED)
 i2c:
@@ -276,12 +277,6 @@ voice_assistant:
         id: text_response
         state: "..."
     - script.execute: draw_display
-    - light.turn_on:
-        id: ws2812_strip
-        effect: "Listening Breathing"
-        red: 100%
-        green: 100%
-        blue: 100%
   on_stt_vad_end:
     - lambda: id(voice_assistant_phase) = ${voice_assist_thinking_phase_id};
     - script.execute: draw_display
@@ -780,3 +775,22 @@ display:
           it.printf(35, 20, id(font_main), id(text_color), "%s", "静音状态");
           id(draw_active_timer_widget).execute();
 
+interval:
+  - interval: 50ms
+    then:
+      - lambda: |-
+          // 只处理“刚刚按下”的瞬间
+          if (id(key_state) != id(last_key_state)) {
+
+            // A 键被按下
+            if (id(key_state) == 1 && id(last_key_state) == 0) {
+              id(green_light).toggle();
+            }
+
+            // B 键被按下
+            else if (id(key_state) == 2 && id(last_key_state) == 0) {
+              id(yellow_light).toggle();
+            }
+
+            id(last_key_state) = id(key_state);
+          }
