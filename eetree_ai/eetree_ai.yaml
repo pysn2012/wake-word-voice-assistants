@@ -152,12 +152,33 @@ light:
     rgb_order: GRB
     restore_mode: ALWAYS_OFF
     effects:
+      # Listening 灯效：白色呼吸
       - pulse:
           name: "Listening Breathing"
           transition_length: 1.2s
           update_interval: 1.2s
-          min_brightness: 10%
-          max_brightness: 70%
+          min_brightness: 15%
+          max_brightness: 50%
+      #  Thinking 灯效：蓝色扫描
+      - addressable_scan:
+          name: "Thinking Scan"
+          move_interval: 80ms
+          scan_width: 2
+      # Replying 灯效：语音律动
+      - random:
+          name: "Replying Voice Pulse"
+          transition_length: 150ms
+          update_interval: 120ms
+      # Idle：极低亮度常亮
+      - strobe:
+          name: "Idle Dim"
+          colors:
+            - state: true
+              brightness: 10%
+              red: 40%
+              green: 60%
+              blue: 100%
+              duration: 5s
 
 # I2C总线 (OLED)
 i2c:
@@ -276,6 +297,7 @@ voice_assistant:
         id: text_response
         state: "..."
     - script.execute: draw_display
+    # Listening 灯效：白色呼吸
     - light.turn_on:
         id: ws2812_strip
         effect: "Listening Breathing"
@@ -285,6 +307,13 @@ voice_assistant:
   on_stt_vad_end:
     - lambda: id(voice_assistant_phase) = ${voice_assist_thinking_phase_id};
     - script.execute: draw_display
+    # Thinking 灯效：蓝色扫描
+    - light.turn_on:
+        id: ws2812_strip
+        effect: "Thinking Scan"
+        red: 0%
+        green: 30%
+        blue: 100%
   on_stt_end:
     - text_sensor.template.publish:
         id: text_request
@@ -296,6 +325,13 @@ voice_assistant:
         state: !lambda return x;
     - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
     - script.execute: draw_display
+    # Replying 灯效：语音律动
+    - light.turn_on:
+        id: ws2812_strip
+        effect: "Replying Voice Pulse"
+        red: 60%
+        green: 0%
+        blue: 100%
   on_end:
     # 短暂等待，以确认是否有播报开始
     - wait_until:
@@ -333,13 +369,7 @@ voice_assistant:
           - lambda: id(voice_assistant_phase) = ${voice_assist_error_phase_id};
           - script.execute: draw_display
           - delay: 1s
-          - if:
-              condition:
-                switch.is_off: mute
-              then:
-                - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-              else:
-                - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+          - script.execute: set_idle_or_mute_phase
           - script.execute: draw_display
   on_client_connected:
     - lambda: id(init_in_progress) = false;
@@ -545,8 +575,15 @@ script:
             switch.is_off: mute
           then:
             - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+            # Idle 灯效
+            - light.turn_on:
+                id: ws2812_strip
+                effect: "Idle Dim"
           else:
             - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+            # 静音：灯直接关
+            - light.turn_off:
+                id: ws2812_strip
 
 # 开关 (Switches)
 switch:
