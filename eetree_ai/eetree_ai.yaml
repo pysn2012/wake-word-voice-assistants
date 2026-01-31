@@ -157,8 +157,8 @@ light:
           name: "Listening Breathing"
           transition_length: 1.2s
           update_interval: 1.2s
-          min_brightness: 15%
-          max_brightness: 50%
+          min_brightness: 5%
+          max_brightness: 30%
       #  Thinking 灯效：蓝色扫描
       - addressable_scan:
           name: "Thinking Scan"
@@ -169,13 +169,6 @@ light:
           name: "Replying Voice Pulse"
           transition_length: 150ms
           update_interval: 120ms
-      # Idle：极低亮度呼吸
-      - pulse:
-          name: "Idle Dim"
-          transition_length: 3s
-          update_interval: 3s
-          min_brightness: 3%
-          max_brightness: 5%
 
 # I2C总线 (OLED)
 i2c:
@@ -298,9 +291,9 @@ voice_assistant:
     - light.turn_on:
         id: ws2812_strip
         effect: "Listening Breathing"
-        red: 100%
-        green: 100%
-        blue: 100%
+        red: 50%
+        green: 50%
+        blue: 50%
   on_stt_vad_end:
     - lambda: id(voice_assistant_phase) = ${voice_assist_thinking_phase_id};
     - script.execute: draw_display
@@ -309,8 +302,8 @@ voice_assistant:
         id: ws2812_strip
         effect: "Thinking Scan"
         red: 0%
-        green: 30%
-        blue: 100%
+        green: 10%
+        blue: 30%
   on_stt_end:
     - text_sensor.template.publish:
         id: text_request
@@ -326,9 +319,9 @@ voice_assistant:
     - light.turn_on:
         id: ws2812_strip
         effect: "Replying Voice Pulse"
-        red: 60%
+        red: 20%
         green: 0%
-        blue: 100%
+        blue: 30%
   on_end:
     # 短暂等待，以确认是否有播报开始
     - wait_until:
@@ -572,13 +565,9 @@ script:
             switch.is_off: mute
           then:
             - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-            # Idle 灯效
-            - light.turn_on:
+            # Idle 灯直接关
+            - light.turn_off:
                 id: ws2812_strip
-                effect: "Idle Dim"
-                red: 40%
-                green: 60%
-                blue: 100%
           else:
             - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
             # 静音：灯直接关
