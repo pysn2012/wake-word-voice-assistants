@@ -711,7 +711,7 @@ font:
       family: "Noto Sans SC"
       weight: 400
     id: font_small
-    size: 12
+    size: 10
     glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
 
@@ -752,37 +752,85 @@ display:
           it.fill(id(bg_color));
           it.printf(30, 20, id(font_main), id(text_color), "%s", "聆听状态");
           id(draw_active_timer_widget).execute();
-      # 思考页面
+# 思考页面
       - id: thinking_page
         lambda: |-
           it.fill(id(bg_color));
           it.printf(0, 0, id(font_main), id(text_color), "%s", "思考:");
+
           const int start_y = 16;
           const int line_height = 12;
           const int max_chars_per_line = 10;
+
           std::string text = id(text_request).state.c_str();
+
           int y = start_y;
-          for (int i = 0; i < text.length() && y < 64; i += max_chars_per_line) {
-            std::string line = text.substr(i, max_chars_per_line);
-            it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
-            y += line_height;
+          int char_count = 0;
+          std::string line;
+
+          for (size_t i = 0; i < text.size() && y < 64;) {
+            uint8_t c = text[i];
+            int len =
+              (c & 0x80) == 0x00 ? 1 :
+              (c & 0xE0) == 0xC0 ? 2 :
+              (c & 0xF0) == 0xE0 ? 3 : 4;
+
+            line += text.substr(i, len);
+            char_count++;
+            i += len;
+
+            if (char_count >= max_chars_per_line) {
+              it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
+              y += line_height;
+              line.clear();
+              char_count = 0;
+            }
           }
+
+          if (!line.empty() && y < 64) {
+            it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
+          }
+
           id(draw_active_timer_widget).execute();
-      # 回复页面
+# 回复页面
       - id: replying_page
         lambda: |-
           it.fill(id(bg_color));
           it.printf(0, 0, id(font_main), id(text_color), "%s", "回复:");
+
           const int start_y = 16;
           const int line_height = 12;
           const int max_chars_per_line = 10;
+
           std::string text = id(text_response).state.c_str();
+
           int y = start_y;
-          for (int i = 0; i < text.length() && y < 64; i += max_chars_per_line) {
-            std::string line = text.substr(i, max_chars_per_line);
-            it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
-            y += line_height;
+          int char_count = 0;
+          std::string line;
+
+          for (size_t i = 0; i < text.size() && y < 64;) {
+            uint8_t c = text[i];
+            int len =
+              (c & 0x80) == 0x00 ? 1 :
+              (c & 0xE0) == 0xC0 ? 2 :
+              (c & 0xF0) == 0xE0 ? 3 : 4;
+
+            line += text.substr(i, len);
+            char_count++;
+            i += len;
+
+            if (char_count >= max_chars_per_line) {
+              it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
+              y += line_height;
+              line.clear();
+              char_count = 0;
+            }
           }
+
+          if (!line.empty() && y < 64) {
+            it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
+          }
+
           id(draw_active_timer_widget).execute();
       # 定时器结束页面
       - id: timer_finished_page
