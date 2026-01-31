@@ -744,7 +744,7 @@ display:
       - id: idle_page
         lambda: |-
           it.fill(id(bg_color));
-          it.printf(30, 20, id(font_main), id(text_color), "%s", "待命状态");
+          it.printf(30, 20, id(font_main), id(text_color), "%s", "待机状态");
           id(draw_active_timer_widget).execute();
       # 监听页面
       - id: listening_page
@@ -756,7 +756,7 @@ display:
       - id: thinking_page
         lambda: |-
           it.fill(id(bg_color));
-          it.printf(0, 0, id(font_main), id(text_color), "%s", "思考状态");
+          it.printf(0, 0, id(font_main), id(text_color), "%s", "思考:");
           const int start_y = 16;
           const int line_height = 12;
           const int max_chars_per_line = 10;
@@ -772,7 +772,7 @@ display:
       - id: replying_page
         lambda: |-
           it.fill(id(bg_color));
-          it.printf(0, 0, id(font_main), id(text_color), "%s", "回复状态");
+          it.printf(0, 0, id(font_main), id(text_color), "%s", "回复:");
           const int start_y = 16;
           const int line_height = 12;
           const int max_chars_per_line = 10;
