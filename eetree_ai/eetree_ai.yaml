@@ -169,16 +169,13 @@ light:
           name: "Replying Voice Pulse"
           transition_length: 150ms
           update_interval: 120ms
-      # Idle：极低亮度常亮
-      - strobe:
+      # Idle：极低亮度呼吸
+      - pulse:
           name: "Idle Dim"
-          colors:
-            - state: true
-              brightness: 10%
-              red: 40%
-              green: 60%
-              blue: 100%
-              duration: 5s
+          transition_length: 3s
+          update_interval: 3s
+          min_brightness: 3%
+          max_brightness: 5%
 
 # I2C总线 (OLED)
 i2c:
@@ -579,6 +576,9 @@ script:
             - light.turn_on:
                 id: ws2812_strip
                 effect: "Idle Dim"
+                red: 40%
+                green: 60%
+                blue: 100%
           else:
             - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
             # 静音：灯直接关
