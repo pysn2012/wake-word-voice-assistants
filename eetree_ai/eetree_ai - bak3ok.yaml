@@ -118,11 +118,13 @@ sensor:
     update_interval: 60s
   # 四位模拟按键（只用 A / B）失败
 
+
 # 绿灯黄灯
 output:
   - platform: gpio
     pin: GPIO43
     id: green_led
+
   - platform: gpio
     pin: GPIO44
     id: yellow_led
@@ -168,18 +170,13 @@ light:
           transition_length: 150ms
           update_interval: 120ms
 
-# I2C 总线
+# I2C总线 (OLED)
 i2c:
-  - id: i2c_bus
-    scl: GPIO6
-    sda: GPIO5
-  - id: camera_i2c
-    sda: GPIO40
-    scl: GPIO39
-    frequency: 100kHz
-    scan: false
+  id: i2c_bus
+  scl: GPIO6
+  sda: GPIO5
 
-# I2S 音频总线
+# 定义 I2S 音频总线
 i2s_audio:
   - id: i2s_mic
     i2s_lrclk_pin: GPIO42   # PDM_CLK
@@ -187,7 +184,7 @@ i2s_audio:
     i2s_lrclk_pin: GPIO7    # ← LRC / WS
     i2s_bclk_pin: GPIO8     # ← BCLK
 
-# PDM 麦克风
+# 定义 PDM 麦克风
 microphone:
   - platform: i2s_audio
     id: box_mic
@@ -199,7 +196,7 @@ microphone:
     bits_per_sample: 16bit
     channel: left
 
-# MAX 98357A
+# 定义 MAX 98357A
 speaker:
   - platform: i2s_audio
     id: box_speaker
@@ -260,7 +257,7 @@ media_player:
             - script.execute: set_idle_or_mute_phase
             - script.execute: draw_display
 
-# 设备端唤醒词引擎 (microWakeWord)
+# 设备端唤醒词引擎 (microWakeWord)，使用 "okay_nabu" 模型
 micro_wake_word:
   id: mww
   models:
@@ -280,6 +277,7 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
   # 定义了语音助手各个生命周期事件的回调，如开始监听、结束监听、开始播放TTS等。
+  # 在这些回调中，会更新屏幕显示状态、发布文本传感器值等。
   on_listening:
     - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};
     - text_sensor.template.publish:
@@ -606,7 +604,7 @@ switch:
             - media_player.speaker.play_on_device_media_file:
                 media_file: timer_finished_sound
                 announcement: true
-            - delay: 1s   # 两次铃声之间的间隔
+            - delay: 1s   # 两次铃声之间的间隔，可调
       - switch.turn_off: timer_ringing
 
     on_turn_off:
@@ -686,6 +684,16 @@ globals:
   - id: global_is_timer
     type: bool
     restore_value: false
+  # 按键状态，0 = 无按键，1 = A键，2 = B键
+  - id: key_state
+    type: int
+    restore_value: false
+    initial_value: "0"
+    # 按键状态last
+  - id: last_key_state
+    type: int
+    restore_value: false
+    initial_value: "0"
 
 # 字体 (Fonts)
 font:
@@ -694,7 +702,7 @@ font:
       family: "Noto Sans SC"
       weight: 400
       italic: false
-    id: font_main  # 标题
+    id: font_main  # 用于显示用户请求文本
     size: 14
     glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
@@ -702,12 +710,13 @@ font:
       type: gfonts
       family: "Noto Sans SC"
       weight: 400
-    id: font_small  # 正文
+    id: font_small
     size: 10
     glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
 
 # 文本传感器 (Text Sensors): 用于在UI中显示请求和回复的文本
+# 包含了截断过长文本的逻辑
 text_sensor:
   - id: text_request
     platform: template
@@ -743,7 +752,7 @@ display:
           it.fill(id(bg_color));
           it.printf(30, 20, id(font_main), id(text_color), "%s", "聆听状态");
           id(draw_active_timer_widget).execute();
-      # 思考页面
+# 思考页面
       - id: thinking_page
         lambda: |-
           it.fill(id(bg_color));
@@ -782,7 +791,7 @@ display:
             it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
           }
           id(draw_active_timer_widget).execute();
-      # 回复页面
+ # 回复页面
       - id: replying_page
         lambda: |-
           it.fill(id(bg_color));
@@ -853,30 +862,3 @@ display:
           it.printf(35, 20, id(font_main), id(text_color), "%s", "静音状态");
           id(draw_active_timer_widget).execute();
 
-esp32_camera:
-  name: ESP32 Camera
-  external_clock:
-    pin: GPIO10           # XCLK_GPIO_NUM
-    frequency: 20MHz
-  i2c_id: camera_i2c
-  data_pins: [GPIO15, GPIO17, GPIO18, GPIO16, GPIO14, GPIO12, GPIO11, GPIO48]
-  vsync_pin: GPIO38
-  href_pin: GPIO47
-  pixel_clock_pin: GPIO13 # PCLK_GPIO_NUM
-  # power_down_pin: -1    # PWDN_GPIO_NUM (未使用)
-  # reset_pin: -1         # RESET_GPIO_NUM (未使用)
-  resolution: 640x480     # QVGA - 分辨率
-  jpeg_quality: 15        # 适合高分辨率的质量设置 (10=最高质量, 63=最低质量)
-  vertical_flip: true    # 上下翻转图像
-  horizontal_mirror: true # 左右翻转图像
-  # 图像调整参数 - 改善亮度
-  brightness: 1           # 亮度调整 (-2 到 2, 默认0)
-  contrast: 0             # 对比度调整 (-2 到 2, 默认0)
-  saturation: 0           # 饱和度调整 (-2 到 2, 默认0)
-  # 自动曝光和增益控制
-  aec_mode: auto          # 自动曝光控制
-  aec2: true              # 启用高级自动曝光
-  ae_level: 1             # 自动曝光级别 (-2 到 2, 默认0)
-  agc_mode: auto          # 自动增益控制
-  agc_gain_ceiling: 2x   # 增益上限 (2x, 4x, 8x, 16x, 32x, 64x, 128x)
-  wb_mode: auto           # 自动白平衡
