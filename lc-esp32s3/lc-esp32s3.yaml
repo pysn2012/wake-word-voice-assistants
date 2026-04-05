@@ -15,7 +15,6 @@ substitutions:
   voice_assist_not_ready_phase_id: "10"
   voice_assist_error_phase_id: "11"
   voice_assist_muted_phase_id: "12"
-  voice_assist_timer_finished_phase_id: "20"
 
   # 允许显示的字符集。此列表非常庞大，包含了多语言字符。
   allowed_characters: |-
@@ -98,8 +97,6 @@ binary_sensor:
       - timing:
           - ON for at least 50ms
           - OFF for at least 50ms
-        then:
-          - switch.turn_off: timer_ringing
       - timing:
           - ON for at least 10s
         then:
@@ -156,9 +153,6 @@ media_player:
       format: FLAC
       sample_rate: 16000
       num_channels: 1
-    files:
-      - id: timer_finished_sound
-        file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/sounds/timer_finished.flac
     on_announcement:
       # 如果麦克风正在录音，则停止唤醒词（mWW或VA）
       - if:
@@ -286,21 +280,6 @@ voice_assistant:
     - script.execute: stop_wake_word
     - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
     - script.execute: draw_display
-  # 计时器相关回调
-  on_timer_started:
-    - script.execute: draw_display
-  on_timer_cancelled:
-    - script.execute: draw_display
-  on_timer_updated:
-    - script.execute: draw_display
-  on_timer_tick:
-    - script.execute: draw_display
-  on_timer_finished:
-    - switch.turn_on: timer_ringing
-    - wait_until:
-        media_player.is_announcing:
-    - lambda: id(voice_assistant_phase) = ${voice_assist_timer_finished_phase_id};
-    - script.execute: draw_display
 
 # 脚本 (Scripts): 封装了可重用的逻辑块
 script:
@@ -345,10 +324,6 @@ script:
                                 id(oled128).show_page(no_ha_page);
                                 id(oled128).update();
                                 break;
-                              case ${voice_assist_timer_finished_phase_id}:
-                                id(oled128).show_page(timer_finished_page);
-                                id(oled128).update();
-                                break;
                               default:
                                 id(oled128).show_page(idle_page);
                                 id(oled128).update();
@@ -363,81 +338,6 @@ script:
             - display.page.show: initializing_page
             - component.update: oled128
 
-  # 获取第一个活跃定时器脚本
-  - id: fetch_first_active_timer
-    then:
-      - lambda: |
-          const auto timers = id(va).get_timers();
-          auto output_timer = timers.begin()->second;
-          for (auto &iterable_timer : timers) {
-            if (iterable_timer.second.is_active && iterable_timer.second.seconds_left <= output_timer.seconds_left) {
-              output_timer = iterable_timer.second;
-            }
-          }
-          id(global_first_active_timer) = output_timer;
-  
-  # 检查是否有活跃定时器脚本
-  - id: check_if_timers_active
-    then:
-      - lambda: |
-          const auto timers = id(va).get_timers();
-          bool output = false;
-          if (timers.size() > 0) {
-            for (auto &iterable_timer : timers) {
-              if(iterable_timer.second.is_active) {
-                output = true;
-              }
-            }
-          }
-          id(global_is_timer_active) = output;
-  
-  # 获取第一个定时器脚本
-  - id: fetch_first_timer
-    then:
-      - lambda: |
-          const auto timers = id(va).get_timers();
-          auto output_timer = timers.begin()->second;
-          for (auto &iterable_timer : timers) {
-            if (iterable_timer.second.seconds_left <= output_timer.seconds_left) {
-              output_timer = iterable_timer.second;
-            }
-          }
-          id(global_first_timer) = output_timer;
-  
-  # 检查是否有定时器脚本
-  - id: check_if_timers
-    then:
-      - lambda: |
-          const auto timers = id(va).get_timers();
-          bool output = false;
-          if (timers.size() > 0) {
-            output = true;
-          }
-          id(global_is_timer) = output;
-
-  # 绘制活跃定时器部件脚本
-  - id: draw_active_timer_widget
-    then:
-      - lambda: |
-          id(check_if_timers_active).execute();
-          if (id(global_is_timer_active)){
-
-            id(fetch_first_active_timer).execute();
-            int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
-            int minutes_left = floor((id(global_first_active_timer).seconds_left - hours_left * 3600) / 60);
-            int seconds_left = id(global_first_active_timer).seconds_left - hours_left * 3600 - minutes_left * 60 ;
-            auto display_hours = (hours_left < 10 ? "0" : "") + std::to_string(hours_left);
-            auto display_minute = (minutes_left < 10 ? "0" : "") + std::to_string(minutes_left);
-            auto display_seconds = (seconds_left  < 10 ? "0" : "") + std::to_string(seconds_left) ;
-
-            std::string display_string = "";
-            if (hours_left > 0) {
-              display_string = display_hours + ":" + display_minute;
-            } else {
-              display_string = display_minute + ":" + display_seconds;
-            }
-            id(oled128).printf(32, 45, id(font_main), Color::WHITE, "%s", display_string.c_str());
-          }
   # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
     then:
@@ -504,24 +404,6 @@ switch:
       - microphone.mute:
       - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
       - script.execute: draw_display
-  - platform: template
-    id: timer_ringing
-    optimistic: true
-    internal: true
-    restore_mode: ALWAYS_OFF
-    on_turn_on:
-      - repeat:
-          count: 3
-          then:
-            - media_player.speaker.play_on_device_media_file:
-                media_file: timer_finished_sound
-                announcement: true
-            - delay: 1s   # 两次铃声之间的间隔
-      - switch.turn_off: timer_ringing
-
-    on_turn_off:
-      - media_player.stop:
-          announcement: true
 
 # 选择器 (Select): 允许用户在UI中选择唤醒词引擎运行位置（设备端或HA端）
 select:
@@ -580,22 +462,6 @@ globals:
     type: int
     restore_value: false
     initial_value: ${voice_assist_not_ready_phase_id}
-  # 第一个活动的计时器
-  - id: global_first_active_timer
-    type: voice_assistant::Timer
-    restore_value: false
-  # 是否有活动的计时器
-  - id: global_is_timer_active
-    type: bool
-    restore_value: false
-  # 第一个计时器（无论是否活动）
-  - id: global_first_timer
-    type: voice_assistant::Timer
-    restore_value: false
-  # 是否有任何计时器
-  - id: global_is_timer
-    type: bool
-    restore_value: false
 
 # 字体 (Fonts)
 font:
@@ -647,13 +513,11 @@ display:
         lambda: |-
           it.fill(id(bg_color));
           it.printf(30, 20, id(font_main), id(text_color), "%s", "待机状态");
-          id(draw_active_timer_widget).execute();
       # 监听页面
       - id: listening_page
         lambda: |-
           it.fill(id(bg_color));
           it.printf(30, 20, id(font_main), id(text_color), "%s", "聆听状态");
-          id(draw_active_timer_widget).execute();
       # 思考页面
       - id: thinking_page
         lambda: |-
@@ -692,7 +556,6 @@ display:
           if (!line.empty() && y < 64) {
             it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
           }
-          id(draw_active_timer_widget).execute();
       # 回复页面
       - id: replying_page
         lambda: |-
@@ -731,12 +594,6 @@ display:
           if (!line.empty() && y < 64) {
             it.printf(0, y, id(font_small), id(text_color), "%s", line.c_str());
           }
-          id(draw_active_timer_widget).execute();
-      # 定时器结束页面
-      - id: timer_finished_page
-        lambda: |-
-          it.fill(id(bg_color));
-          it.printf(30, 20, id(font_main), id(text_color), "%s", "时间结束");
       # 错误页面
       - id: error_page
         lambda: |-
@@ -762,5 +619,4 @@ display:
         lambda: |-
           it.fill(id(bg_color));
           it.printf(35, 20, id(font_main), id(text_color), "%s", "静音状态");
-          id(draw_active_timer_widget).execute();
 
