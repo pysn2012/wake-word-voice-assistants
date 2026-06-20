@@ -205,7 +205,7 @@ media_player:
             # Ensure VA stops before moving on
             - if:
                 condition:
-                  - lambda: return id(wake_word_engine_location).current_option == "In Home Assistant";
+                  - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
                 then:
                   - wait_until:
                       - not:
@@ -289,7 +289,7 @@ voice_assistant:
     # 如果启用了手动唤醒词（mWW），则仅重启它；流式唤醒词会自动重启
     - if:
         condition:
-          - lambda: return id(wake_word_engine_location).current_option == "On device";
+          - lambda: return id(wake_word_engine_location).current_option() == "On device";
         then:
           - lambda: id(va).set_use_wake_word(false);
           - micro_wake_word.start:
@@ -409,10 +409,10 @@ script:
     then:
       - lambda: |
           const auto timers = id(va).get_timers();
-          auto output_timer = timers.begin();
-          for (auto &iterable_timer : timers) {
-            if (iterable_timer.is_active && iterable_timer.seconds_left <= output_timer.seconds_left) {
-              output_timer = iterable_timer;
+          auto output_timer = *timers.begin();
+          for (auto it = timers.begin(); it != timers.end(); ++it) {
+            if ((*it).is_active && (*it).seconds_left <= output_timer.seconds_left) {
+              output_timer = *it;
             }
           }
           id(global_first_active_timer) = output_timer;
@@ -424,8 +424,8 @@ script:
           const auto timers = id(va).get_timers();
           bool output = false;
           if (timers.size() > 0) {
-            for (auto &iterable_timer : timers) {
-              if(iterable_timer.is_active) {
+            for (auto it = timers.begin(); it != timers.end(); ++it) {
+              if ((*it).is_active) {
                 output = true;
               }
             }
@@ -437,10 +437,10 @@ script:
     then:
       - lambda: |
           const auto timers = id(va).get_timers();
-          auto output_timer = timers.begin();
-          for (auto &iterable_timer : timers) {
-            if (iterable_timer.seconds_left <= output_timer.seconds_left) {
-              output_timer = iterable_timer;
+          auto output_timer = *timers.begin();
+          for (auto it = timers.begin(); it != timers.end(); ++it) {
+            if ((*it).seconds_left <= output_timer.seconds_left) {
+              output_timer = *it;
             }
           }
           id(global_first_timer) = output_timer;
@@ -510,7 +510,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).current_option == "On device";
+              - lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
@@ -519,7 +519,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).current_option == "In Home Assistant";
+              - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
@@ -528,13 +528,13 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).current_option == "In Home Assistant";
+            lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).current_option == "On device";
+            lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
   # 根据软件静音开关的状态，将语音助手阶段设置为空闲或静音
