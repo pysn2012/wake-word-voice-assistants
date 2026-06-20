@@ -54,11 +54,10 @@ esphome:
 esp32:
   variant: esp32p4
   flash_size: 16MB
+  engineering_sample: true
   cpu_frequency: 360MHz
   framework:
     type: esp-idf
-    advanced:
-      enable_idf_experimental_features: true
     sdkconfig_options:
       CONFIG_LWIP_TCP_WND_DEFAULT: "16384"
       CONFIG_SPI_FLASH_YIELD_DURING_ERASE: "y"
