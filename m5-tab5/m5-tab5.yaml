@@ -475,19 +475,21 @@ script:
       - lambda: |
           id(check_if_timers_active).execute();
           id(check_if_timers).execute();
+          int dw = 1280;
+          int dh = 720;
           if (id(global_is_timer_active)){
             id(fetch_first_active_timer).execute();
-            int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
+            int active_pixels = round( dw * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
             if (active_pixels > 0){
-              id(p4_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(p4_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
+              id(p4_box_lcd).filled_rectangle(0 , dh - 20 , dw , 20 , Color::WHITE );
+              id(p4_box_lcd).filled_rectangle(0 , dh - 19 , active_pixels , 18 , id(active_timer_color) );
             }
           } else if (id(global_is_timer)){
             id(fetch_first_timer).execute();
-            int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
+            int active_pixels = round( dw * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
             if (active_pixels > 0){
-              id(p4_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(p4_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
+              id(p4_box_lcd).filled_rectangle(0 , dh - 20 , dw , 20 , Color::WHITE );
+              id(p4_box_lcd).filled_rectangle(0 , dh - 19 , active_pixels , 18 , id(paused_timer_color) );
             }
           }
   # 绘制活跃定时器部件脚本
@@ -496,8 +498,9 @@ script:
       - lambda: |
           id(check_if_timers_active).execute();
           if (id(global_is_timer_active)){
-            id(p4_box_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
-            id(p4_box_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
+            int wx = 1040, wy = 20, ww = 200, wh = 60;
+            id(p4_box_lcd).filled_rectangle(wx , wy , ww , wh , Color::WHITE );
+            id(p4_box_lcd).rectangle(wx , wy , ww , wh , Color::BLACK );
 
             id(fetch_first_active_timer).execute();
             int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
@@ -513,7 +516,7 @@ script:
             } else {
               display_string = display_minute + ":" + display_seconds;
             }
-            id(p4_box_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
+            id(p4_box_lcd).printf(wx + ww / 2, wy + 15, id(font_timer), Color::BLACK, TextAlign::CENTER, "%s", display_string.c_str());
           }
   # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
@@ -724,47 +727,47 @@ globals:
 image:
   - file: ${error_illustration_file}
     id: casita_error
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: ${idle_illustration_file}
     id: casita_idle
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: ${listening_illustration_file}
     id: casita_listening
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: ${thinking_illustration_file}
     id: casita_thinking
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: ${replying_illustration_file}
     id: casita_replying
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: ${timer_finished_illustration_file}
     id: casita_timer_finished
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: ${loading_illustration_file}
     id: casita_initializing
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
     id: error_no_wifi
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
     id: error_no_ha
-    resize: 320x240
+    resize: 480x360
     type: RGB
     transparency: alpha_channel
 
@@ -856,6 +859,7 @@ display:
     pixel_mode: 16bit
     color_order: RGB
     update_interval: never
+    rotation: 90
     # 定义了多个显示页面，每个页面是一个独立的绘制函数
     pages:
       # 空闲页面
@@ -875,22 +879,26 @@ display:
       - id: thinking_page
         lambda: |-
           it.fill(id(thinking_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_thinking), ImageAlign::CENTER);
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
-          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
+          int bw = 800;
+          int bx = (it.get_width() - bw) / 2;
+          it.filled_rectangle(bx, 80, bw, 40, Color::WHITE);
+          it.rectangle(bx, 80, bw, 40, Color::BLACK);
+          it.printf(it.get_width() / 2, 100, id(font_request), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
+          it.image((it.get_width() / 2), (it.get_height() / 2) + 20, id(casita_thinking), ImageAlign::CENTER);
           id(draw_timer_timeline).execute();
       # 回复页面
       - id: replying_page
         lambda: |-
           it.fill(id(replying_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_replying), ImageAlign::CENTER);
-          it.filled_rectangle(20 , 20 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
-          it.filled_rectangle(20 , 190 , 280 , 30 , Color::WHITE );
-          it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );
-          it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
-          it.printf(30, 195, id(font_response), Color::BLACK, "%s", id(text_response).state.c_str());
+          int bw = 800;
+          int bx = (it.get_width() - bw) / 2;
+          it.filled_rectangle(bx, 50, bw, 40, Color::WHITE);
+          it.rectangle(bx, 50, bw, 40, Color::BLACK);
+          it.printf(it.get_width() / 2, 70, id(font_request), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
+          it.image((it.get_width() / 2), (it.get_height() / 2) - 20, id(casita_replying), ImageAlign::CENTER);
+          it.filled_rectangle(bx, 560, bw, 40, Color::WHITE);
+          it.rectangle(bx, 560, bw, 40, Color::BLACK);
+          it.printf(it.get_width() / 2, 580, id(font_response), Color::BLACK, TextAlign::CENTER, "%s", id(text_response).state.c_str());
           id(draw_timer_timeline).execute();
       # 定时器结束页面
       - id: timer_finished_page
