@@ -516,7 +516,7 @@ script:
             } else {
               display_string = display_minute + ":" + display_seconds;
             }
-            id(p4_box_lcd).printf(wx + ww / 2, wy + 15, id(font_timer), Color::BLACK, TextAlign::CENTER, "%s", display_string.c_str());
+            id(p4_box_lcd).printf(wx + ww / 2, wy + 15, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", display_string.c_str());
           }
   # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
@@ -727,47 +727,47 @@ globals:
 image:
   - file: ${error_illustration_file}
     id: casita_error
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: ${idle_illustration_file}
     id: casita_idle
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: ${listening_illustration_file}
     id: casita_listening
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: ${thinking_illustration_file}
     id: casita_thinking
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: ${replying_illustration_file}
     id: casita_replying
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: ${timer_finished_illustration_file}
     id: casita_timer_finished
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: ${loading_illustration_file}
     id: casita_initializing
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
     id: error_no_wifi
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
     id: error_no_ha
-    resize: 480x360
+    resize: 1280x720
     type: RGB
     transparency: alpha_channel
 
@@ -778,27 +778,7 @@ font:
       family: "Noto Sans SC"
       weight: 400
       italic: false
-    id: font_request  # 用于显示用户请求文本
-    size: 15
-    glyphs: ${allowed_characters}
-    ignore_missing_glyphs: true
-
-  - file:
-      type: gfonts
-      family: "Noto Sans SC"
-      weight: 400
-      italic: false
-    id: font_response  # 用于显示助手回复文本
-    size: 15
-    glyphs: ${allowed_characters}
-    ignore_missing_glyphs: true
-
-  - file:
-      type: gfonts
-      family: "Noto Sans SC"
-      weight: 400
-      italic: false
-    id: font_timer  # 用于显示计时器时间
+    id: font_cn  # 用于显示用户请求文本
     size: 30
     glyphs: ${allowed_characters}
     ignore_missing_glyphs: true
@@ -859,7 +839,7 @@ display:
     pixel_mode: 16bit
     color_order: RGB
     update_interval: never
-    rotation: 90
+    rotation: 270
     # 定义了多个显示页面，每个页面是一个独立的绘制函数
     pages:
       # 空闲页面
@@ -883,7 +863,7 @@ display:
           int bx = (it.get_width() - bw) / 2;
           it.filled_rectangle(bx, 80, bw, 40, Color::WHITE);
           it.rectangle(bx, 80, bw, 40, Color::BLACK);
-          it.printf(it.get_width() / 2, 100, id(font_request), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
+          it.printf(it.get_width() / 2, 100, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
           it.image((it.get_width() / 2), (it.get_height() / 2) + 20, id(casita_thinking), ImageAlign::CENTER);
           id(draw_timer_timeline).execute();
       # 回复页面
@@ -894,11 +874,11 @@ display:
           int bx = (it.get_width() - bw) / 2;
           it.filled_rectangle(bx, 50, bw, 40, Color::WHITE);
           it.rectangle(bx, 50, bw, 40, Color::BLACK);
-          it.printf(it.get_width() / 2, 70, id(font_request), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
+          it.printf(it.get_width() / 2, 70, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
           it.image((it.get_width() / 2), (it.get_height() / 2) - 20, id(casita_replying), ImageAlign::CENTER);
           it.filled_rectangle(bx, 560, bw, 40, Color::WHITE);
           it.rectangle(bx, 560, bw, 40, Color::BLACK);
-          it.printf(it.get_width() / 2, 580, id(font_response), Color::BLACK, TextAlign::CENTER, "%s", id(text_response).state.c_str());
+          it.printf(it.get_width() / 2, 580, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_response).state.c_str());
           id(draw_timer_timeline).execute();
       # 定时器结束页面
       - id: timer_finished_page
