@@ -37,7 +37,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2025.9.3      # 要求的最低ESPHome版本
+  min_version: 2025.12.0      # 要求的最低ESPHome版本
   name_add_mac_suffix: true  # 设备名后缀添加MAC地址，避免冲突
   on_boot:  # 开机启动逻辑
     priority: 600
@@ -51,6 +51,7 @@ esphome:
             - lambda: id(init_in_progress) = false;
             - script.execute: draw_display
 
+#  board: m5stack-tab5-p4
 esp32:
   variant: esp32p4
   flash_size: 16MB
@@ -58,9 +59,6 @@ esp32:
   cpu_frequency: 360MHz
   framework:
     type: esp-idf
-    sdkconfig_options:
-      CONFIG_LWIP_TCP_WND_DEFAULT: "16384"
-      CONFIG_SPI_FLASH_YIELD_DURING_ERASE: "y"
 
 # WiFi模块配置（ESP32-C6）
 esp32_hosted:
@@ -133,8 +131,24 @@ i2c:
 pi4ioe5v6408:
   - id: pi4ioe1
     address: 0x43
+    # 0: O - WiFi 天线切换，控制使用内置天线还是外接天线
+    # 1: O - 扬声器使能，控制音频功放/扬声器电源开关
+    # 2: O - 外部5V电源输出，为外部设备提供5V供电
+    # 3: NC
+    # 4: O - LCD显示屏复位，控制屏幕复位信号
+    # 5: O - 触摸屏复位，控制触控面板复位信号
+    # 6: O - 摄像头复位，控制摄像头模组复位信号
+    # 7: I - 耳机检测，检测是否有耳机插入（中断/状态信号）
   - id: pi4ioe2
     address: 0x44
+    # 0: O - WiFi模块电源，控制 ESP32-C6 协处理器的电源通断
+    # 1: NC
+    # 2: NC
+    # 3: O - USB 5V电源输出，控制 USB 接口的 5V 供电
+    # 4: O - 关机脉冲，发送关机信号，用于系统软关机
+    # 5: O - 快充使能（反相），控制快充功能，注意该引脚逻辑反相（写 0 开启，写 1 关闭）
+    # 6: I - 充电状态检测，读取当前是否在充电的状态
+    # 7: O - 充电使能，控制电池充电功能的开启/关闭
 
 esp_ldo:
   - voltage: 2.5V
@@ -549,6 +563,14 @@ script:
 
 # 开关 (Switches)
 switch:
+  # WIFI开关
+  - platform: gpio
+    id: wifi_power
+    name: "WiFi Power"
+    pin:
+      pi4ioe5v6408: pi4ioe2
+      number: 0
+    restore_mode: ALWAYS_ON
   # 软件静音开关
   - platform: template
     name: Mute
