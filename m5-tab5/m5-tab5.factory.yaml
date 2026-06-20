@@ -1,10 +1,5 @@
 ---
 packages:
-  va_connected_wait_for_ble:
-    voice_assistant:
-      on_client_connected:
-        - wait_until:
-            not: ble.enabled
   m5-tab5: !include m5-tab5.yaml
 
 esphome:
@@ -18,11 +13,6 @@ ota:
 wifi:
   on_connect:
     - delay: 5s
-    - ble.disable:
+    # - ble.disable:
   on_disconnect:
-    - ble.enable:
-
-improv_serial:
-
-esp32_improv:
-  authorizer: none
+    # - ble.enable:
