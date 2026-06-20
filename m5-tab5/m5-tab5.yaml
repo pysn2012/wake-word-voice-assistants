@@ -78,7 +78,7 @@ esp32_hosted:
 
 psram:
   mode: hex
-  speed: 80MHz
+  speed: 200MHz
 
 api:
   on_client_connected:
