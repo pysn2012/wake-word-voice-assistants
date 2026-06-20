@@ -363,46 +363,46 @@ script:
                         - lambda: |
                             switch(id(voice_assistant_phase)) {
                               case ${voice_assist_listening_phase_id}:
-                                id(s3_box_lcd).show_page(listening_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(listening_page);
+                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_thinking_phase_id}:
-                                id(s3_box_lcd).show_page(thinking_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(thinking_page);
+                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_replying_phase_id}:
-                                id(s3_box_lcd).show_page(replying_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(replying_page);
+                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_error_phase_id}:
-                                id(s3_box_lcd).show_page(error_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(error_page);
+                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_muted_phase_id}:
-                                id(s3_box_lcd).show_page(muted_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(muted_page);
+                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_not_ready_phase_id}:
-                                id(s3_box_lcd).show_page(no_ha_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(no_ha_page);
+                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_timer_finished_phase_id}:
-                                id(s3_box_lcd).show_page(timer_finished_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(timer_finished_page);
+                                id(p4_box_lcd).update();
                                 break;
                               default:
-                                id(s3_box_lcd).show_page(idle_page);
-                                id(s3_box_lcd).update();
+                                id(p4_box_lcd).show_page(idle_page);
+                                id(p4_box_lcd).update();
                             }
                       else:
                         - display.page.show: no_ha_page
-                        - component.update: s3_box_lcd
+                        - component.update: p4_box_lcd
                 else:
                   - display.page.show: no_wifi_page
-                  - component.update: s3_box_lcd
+                  - component.update: p4_box_lcd
           else:
             - display.page.show: initializing_page
-            - component.update: s3_box_lcd
+            - component.update: p4_box_lcd
 
   # 获取第一个活跃定时器脚本
   - id: fetch_first_active_timer
@@ -466,15 +466,15 @@ script:
             id(fetch_first_active_timer).execute();
             int active_pixels = round( 320 * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
             if (active_pixels > 0){
-              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
+              id(p4_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(p4_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(active_timer_color) );
             }
           } else if (id(global_is_timer)){
             id(fetch_first_timer).execute();
             int active_pixels = round( 320 * id(global_first_timer).seconds_left / max(id(global_first_timer).total_seconds , static_cast<uint32_t>(1)));
             if (active_pixels > 0){
-              id(s3_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
-              id(s3_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
+              id(p4_box_lcd).filled_rectangle(0 , 225 , 320 , 15 , Color::WHITE );
+              id(p4_box_lcd).filled_rectangle(0 , 226 , active_pixels , 13 , id(paused_timer_color) );
             }
           }
   # 绘制活跃定时器部件脚本
@@ -483,8 +483,8 @@ script:
       - lambda: |
           id(check_if_timers_active).execute();
           if (id(global_is_timer_active)){
-            id(s3_box_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
-            id(s3_box_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
+            id(p4_box_lcd).filled_rectangle(80 , 40 , 160 , 50 , Color::WHITE );
+            id(p4_box_lcd).rectangle(80 , 40 , 160 , 50 , Color::BLACK );
 
             id(fetch_first_active_timer).execute();
             int hours_left = floor(id(global_first_active_timer).seconds_left / 3600);
@@ -500,7 +500,7 @@ script:
             } else {
               display_string = display_minute + ":" + display_seconds;
             }
-            id(s3_box_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
+            id(p4_box_lcd).printf(120, 47, id(font_timer), Color::BLACK, "%s", display_string.c_str());
           }
   # 根据配置的位置启动mWW或流式唤醒词
   - id: start_wake_word
@@ -819,6 +819,7 @@ display:
     dimensions:
       height: 1280
       width: 720
+    id: p4_box_lcd
     model: M5STACK-TAB5-V2
     reset_pin:
       pi4ioe5v6408: pi4ioe1
