@@ -2,23 +2,6 @@
 substitutions:
   name: m5-tab5
   friendly_name: M5stack TAB5 
-  
-  # 显示屏各状态下的插图URL
-  loading_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/loading_320_240.png
-  idle_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/idle_320_240.png
-  listening_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/listening_320_240.png
-  thinking_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/thinking_320_240.png
-  replying_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/replying_320_240.png
-  error_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/error_320_240.png
-  timer_finished_illustration_file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/casita/timer_finished_320_240.png
-
-  # 各状态画面的背景色（16进制）
-  loading_illustration_background_color: "000000"
-  idle_illustration_background_color: "000000"
-  listening_illustration_background_color: "FFFFFF"
-  thinking_illustration_background_color: "FFFFFF"
-  replying_illustration_background_color: "FFFFFF"
-  error_illustration_background_color: "000000"
 
   # 语音助手不同阶段的ID，用于内部逻辑判断和显示切换
   voice_assist_idle_phase_id: "1"
@@ -720,54 +703,6 @@ globals:
     type: bool
     restore_value: false
 
-# 图像资源 (Images): 从URL下载并缓存到设备Flash中
-image:
-  - file: ${error_illustration_file}
-    id: casita_error
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: ${idle_illustration_file}
-    id: casita_idle
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: ${listening_illustration_file}
-    id: casita_listening
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: ${thinking_illustration_file}
-    id: casita_thinking
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: ${replying_illustration_file}
-    id: casita_replying
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: ${timer_finished_illustration_file}
-    id: casita_timer_finished
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: ${loading_illustration_file}
-    id: casita_initializing
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
-    id: error_no_wifi
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-  - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
-    id: error_no_ha
-    resize: 720x1280
-    type: RGB565
-    transparency: alpha_channel
-
 # 字体 (Fonts): 使用Google Fonts下载Noto Sans SC字体，并预渲染指定字符
 font:
   - file:
@@ -785,42 +720,9 @@ font:
 text_sensor:
   - id: text_request
     platform: template
-    on_value:
-      lambda: |-
-        if(id(text_request).state.length()>52) {
-          std::string name = id(text_request).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_request).state = (truncated+"...").c_str();
-        }
 
   - id: text_response
     platform: template
-    on_value:
-      lambda: |-
-        if(id(text_response).state.length()>52) {
-          std::string name = id(text_response).state.c_str();
-          std::string truncated = esphome::str_truncate(name.c_str(),31);
-          id(text_response).state = (truncated+"...").c_str();
-        }
-
-# 颜色定义 (Colors): 将HEX颜色值定义为ID，方便在显示逻辑中引用
-color:
-  - id: idle_color
-    hex: ${idle_illustration_background_color}
-  - id: listening_color
-    hex: ${listening_illustration_background_color}
-  - id: thinking_color
-    hex: ${thinking_illustration_background_color}
-  - id: replying_color
-    hex: ${replying_illustration_background_color}
-  - id: loading_color
-    hex: ${loading_illustration_background_color}
-  - id: error_color
-    hex: ${error_illustration_background_color}
-  - id: active_timer_color
-    hex: "26ed3a"
-  - id: paused_timer_color
-    hex: "3b89e3"
 
 # 显示屏 (Display): 配置ILI9XXX系列屏幕（S3BOX型号）
 display:
@@ -842,69 +744,57 @@ display:
       # 空闲页面
       - id: idle_page
         lambda: |-
-          it.fill(id(idle_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_idle), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2 - 30, id(font_cn), Color::BLACK, TextAlign::CENTER, "待机状态");
           id(draw_timer_timeline).execute();
           id(draw_active_timer_widget).execute();
       # 监听页面
       - id: listening_page
         lambda: |-
-          it.fill(id(listening_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_listening), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2, id(font_cn), Color::BLACK, TextAlign::CENTER, "聆听状态");
           id(draw_timer_timeline).execute();
       # 思考页面
       - id: thinking_page
         lambda: |-
-          it.fill(id(thinking_color));
-          int bw = 800;
-          int bx = (it.get_width() - bw) / 2;
-          it.filled_rectangle(bx, 80, bw, 40, Color::WHITE);
-          it.rectangle(bx, 80, bw, 40, Color::BLACK);
-          it.printf(it.get_width() / 2, 100, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
-          it.image((it.get_width() / 2), (it.get_height() / 2) + 20, id(casita_thinking), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() - 100, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
           id(draw_timer_timeline).execute();
       # 回复页面
       - id: replying_page
         lambda: |-
-          it.fill(id(replying_color));
-          int bw = 800;
-          int bx = (it.get_width() - bw) / 2;
-          it.filled_rectangle(bx, 50, bw, 40, Color::WHITE);
-          it.rectangle(bx, 50, bw, 40, Color::BLACK);
-          it.printf(it.get_width() / 2, 70, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_request).state.c_str());
-          it.image((it.get_width() / 2), (it.get_height() / 2) - 20, id(casita_replying), ImageAlign::CENTER);
-          it.filled_rectangle(bx, 560, bw, 40, Color::WHITE);
-          it.rectangle(bx, 560, bw, 40, Color::BLACK);
-          it.printf(it.get_width() / 2, 580, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_response).state.c_str());
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() - 100, id(font_cn), Color::BLACK, TextAlign::CENTER, "%s", id(text_response).state.c_str());
           id(draw_timer_timeline).execute();
       # 定时器结束页面
       - id: timer_finished_page
         lambda: |-
-          it.fill(id(idle_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_timer_finished), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2, id(font_cn), Color::BLACK, TextAlign::CENTER, "定时已结束");
       # 错误页面
       - id: error_page
         lambda: |-
-          it.fill(id(error_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_error), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2, id(font_cn), Color::BLACK, TextAlign::CENTER, "呃，出错了");
       # 无Home Assistant页面
       - id: no_ha_page
         lambda: |-
-          it.fill(Color::BLACK);
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_ha), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2, id(font_cn), Color::BLACK, TextAlign::CENTER, "请连接HA");
       # 无WiFi页面
       - id: no_wifi_page
         lambda: |-
-          it.fill(Color::BLACK);
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_wifi), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2, id(font_cn), Color::BLACK, TextAlign::CENTER, "请连接WIFI");
       # 初始化页面
       - id: initializing_page
         lambda: |-
-          it.fill(id(loading_color));
-          it.image((it.get_width() / 2), (it.get_height() / 2), id(casita_initializing), ImageAlign::CENTER);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2, id(font_cn), Color::BLACK, TextAlign::CENTER, "加载中...");
       # 静音页面
       - id: muted_page
         lambda: |-
-          it.fill(Color::BLACK);
+          it.fill(Color::WHITE);
+          it.printf(it.get_width() / 2, it.get_height() / 2, id(font_cn), Color::BLACK, TextAlign::CENTER, "静音状态");
           id(draw_timer_timeline).execute();
           id(draw_active_timer_widget).execute();
