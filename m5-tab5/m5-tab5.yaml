@@ -475,8 +475,8 @@ script:
       - lambda: |
           id(check_if_timers_active).execute();
           id(check_if_timers).execute();
-          int dw = 1280;
-          int dh = 720;
+          int dw = id(p4_box_lcd).get_width();
+          int dh = id(p4_box_lcd).get_height();
           if (id(global_is_timer_active)){
             id(fetch_first_active_timer).execute();
             int active_pixels = round( dw * id(global_first_active_timer).seconds_left / max(id(global_first_active_timer).total_seconds , static_cast<uint32_t>(1)) );
@@ -727,47 +727,47 @@ globals:
 image:
   - file: ${error_illustration_file}
     id: casita_error
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: ${idle_illustration_file}
     id: casita_idle
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: ${listening_illustration_file}
     id: casita_listening
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: ${thinking_illustration_file}
     id: casita_thinking
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: ${replying_illustration_file}
     id: casita_replying
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: ${timer_finished_illustration_file}
     id: casita_timer_finished
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: ${loading_illustration_file}
     id: casita_initializing
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
     id: error_no_wifi
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
     id: error_no_ha
-    resize: 1280x720
+    resize: 720x1280
     type: RGB
     transparency: alpha_channel
 
@@ -893,10 +893,12 @@ display:
       # 无Home Assistant页面
       - id: no_ha_page
         lambda: |-
+          it.fill(Color::BLACK);
           it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_ha), ImageAlign::CENTER);
       # 无WiFi页面
       - id: no_wifi_page
         lambda: |-
+          it.fill(Color::BLACK);
           it.image((it.get_width() / 2), (it.get_height() / 2), id(error_no_wifi), ImageAlign::CENTER);
       # 初始化页面
       - id: initializing_page
