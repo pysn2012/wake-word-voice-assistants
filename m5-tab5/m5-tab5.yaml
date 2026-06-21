@@ -374,46 +374,43 @@ script:
                         api.connected:
                       then:
                         - lambda: |
+                            id(p4_box_lcd).clear();
                             switch(id(voice_assistant_phase)) {
                               case ${voice_assist_listening_phase_id}:
                                 id(p4_box_lcd).show_page(listening_page);
-                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_thinking_phase_id}:
                                 id(p4_box_lcd).show_page(thinking_page);
-                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_replying_phase_id}:
                                 id(p4_box_lcd).show_page(replying_page);
-                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_error_phase_id}:
                                 id(p4_box_lcd).show_page(error_page);
-                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_muted_phase_id}:
                                 id(p4_box_lcd).show_page(muted_page);
-                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_not_ready_phase_id}:
                                 id(p4_box_lcd).show_page(no_ha_page);
-                                id(p4_box_lcd).update();
                                 break;
                               case ${voice_assist_timer_finished_phase_id}:
                                 id(p4_box_lcd).show_page(timer_finished_page);
-                                id(p4_box_lcd).update();
                                 break;
                               default:
                                 id(p4_box_lcd).show_page(idle_page);
-                                id(p4_box_lcd).update();
                             }
+                            id(p4_box_lcd).update();
                       else:
+                        - lambda: id(p4_box_lcd).clear();
                         - display.page.show: no_ha_page
                         - component.update: p4_box_lcd
                 else:
+                  - lambda: id(p4_box_lcd).clear();
                   - display.page.show: no_wifi_page
                   - component.update: p4_box_lcd
           else:
+            - lambda: id(p4_box_lcd).clear();
             - display.page.show: initializing_page
             - component.update: p4_box_lcd
 
@@ -728,47 +725,47 @@ image:
   - file: ${error_illustration_file}
     id: casita_error
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: ${idle_illustration_file}
     id: casita_idle
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: ${listening_illustration_file}
     id: casita_listening
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: ${thinking_illustration_file}
     id: casita_thinking
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: ${replying_illustration_file}
     id: casita_replying
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: ${timer_finished_illustration_file}
     id: casita_timer_finished
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: ${loading_illustration_file}
     id: casita_initializing
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-wifi.png
     id: error_no_wifi
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
   - file: https://github.com/pysn2012/wake-word-voice-assistants/raw/main/error_box_illustrations/error-no-ha.png
     id: error_no_ha
     resize: 720x1280
-    type: RGB
+    type: RGB565
     transparency: alpha_channel
 
 # 字体 (Fonts): 使用Google Fonts下载Noto Sans SC字体，并预渲染指定字符
