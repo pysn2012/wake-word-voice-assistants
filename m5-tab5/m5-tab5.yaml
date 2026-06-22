@@ -729,16 +729,13 @@ text_sensor:
 # 显示屏 (Display)
 display:
   - platform: mipi_dsi
-    dimensions:
-      height: 1280
-      width: 720
     id: p4_box_lcd
     model: M5STACK-TAB5-V2
     reset_pin:
       pi4ioe5v6408: pi4ioe1
       number: 4
-    pixel_mode: 16bit
-    color_order: RGB
+    #pixel_mode: 16bit
+    #color_order: RGB
     update_interval: never
     # rotation: 270
     # 定义了多个显示页面，每个页面是一个独立的绘制函数
