@@ -737,6 +737,7 @@ display:
     #pixel_mode: 16bit
     #color_order: RGB
     update_interval: never
+    auto_clear_enabled: true
     # rotation: 270
     # 定义了多个显示页面，每个页面是一个独立的绘制函数
     pages:
