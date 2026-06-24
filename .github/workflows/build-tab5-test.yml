@@ -1,5 +1,5 @@
 # 工作流名称
-name: build m5-tab5
+name: build m5-tab5 test
 
 # 触发条件
 on:
