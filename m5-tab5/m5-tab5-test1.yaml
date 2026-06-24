@@ -35,6 +35,12 @@ psram:
   mode: hex
   speed: 200MHz
 
+wifi:
+  ssid: shami
+  password: cnas2020
+
+api:
+
 logger:
   hardware_uart: USB_SERIAL_JTAG
 
