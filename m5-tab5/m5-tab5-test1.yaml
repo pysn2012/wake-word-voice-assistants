@@ -1,0 +1,111 @@
+---
+substitutions:
+  name: m5-tab5
+  friendly_name: M5stack TAB5 
+  
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.12.0      # 要求的最低ESPHome版本
+  name_add_mac_suffix: true  # 设备名后缀添加MAC地址，避免冲突
+
+#  board: m5stack-tab5-p4
+esp32:
+  variant: esp32p4
+  flash_size: 16MB
+  engineering_sample: true
+  cpu_frequency: 360MHz
+  framework:
+    type: esp-idf
+
+# WiFi模块配置（ESP32-C6）
+esp32_hosted:
+  variant: esp32c6
+  active_high: true
+  clk_pin: GPIO12
+  cmd_pin: GPIO13
+  d0_pin: GPIO11
+  d1_pin: GPIO10
+  d2_pin: GPIO9
+  d3_pin: GPIO8
+  reset_pin: GPIO15
+  slot: 1
+
+psram:
+  mode: hex
+  speed: 200MHz
+
+api:
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+
+# 屏幕背光控制 (GPIO47)
+output:
+  - platform: ledc
+    pin: GPIO22
+    id: backlight_output
+
+light:
+  - platform: monochromatic
+    id: led
+    name: Screen
+    icon: "mdi:television"
+    entity_category: config
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 250ms
+
+# I2C总线
+i2c:
+  - id: bsp_bus
+    sda: GPIO31
+    scl: GPIO32
+    frequency: 400kHz
+
+pi4ioe5v6408:
+  - id: pi4ioe1
+    address: 0x43
+    # 0: O - WiFi 天线切换，控制使用内置天线还是外接天线
+    # 1: O - 扬声器使能，控制音频功放/扬声器电源开关
+    # 2: O - 外部5V电源输出，为外部设备提供5V供电
+    # 3: NC
+    # 4: O - LCD显示屏复位，控制屏幕复位信号
+    # 5: O - 触摸屏复位，控制触控面板复位信号
+    # 6: O - 摄像头复位，控制摄像头模组复位信号
+    # 7: I - 耳机检测，检测是否有耳机插入（中断/状态信号）
+  - id: pi4ioe2
+    address: 0x44
+    # 0: O - WiFi模块电源，控制 ESP32-C6 协处理器的电源通断
+    # 1: NC
+    # 2: NC
+    # 3: O - USB 5V电源输出，控制 USB 接口的 5V 供电
+    # 4: O - 关机脉冲，发送关机信号，用于系统软关机
+    # 5: O - 快充使能（反相），控制快充功能，注意该引脚逻辑反相（写 0 开启，写 1 关闭）
+    # 6: I - 充电状态检测，读取当前是否在充电的状态
+    # 7: O - 充电使能，控制电池充电功能的开启/关闭
+
+esp_ldo:
+  - voltage: 2.5V
+    channel: 3
+
+# 显示屏 (Display): 配置ILI9XXX系列屏幕（S3BOX型号）
+display:
+  - platform: mipi_dsi
+    dimensions:
+      height: 1280
+      width: 720
+    id: p4_box_lcd
+    model: M5STACK-TAB5-V2
+    reset_pin:
+      pi4ioe5v6408: pi4ioe1
+      number: 4
+    pixel_mode: 16bit
+    color_order: RGB
+    update_interval: never
+    rotation: 270
+    # 定义了多个显示页面，每个页面是一个独立的绘制函数
+    pages:
+      - id: page1
+        lambda: |-
+          it.fill(Color::WHITE);
