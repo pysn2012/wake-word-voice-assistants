@@ -10,7 +10,4 @@ esphome:
 ota:
   - platform: esphome
 
-wifi:
-  on_connect:
-    - delay: 5s
-  on_disconnect:
+
