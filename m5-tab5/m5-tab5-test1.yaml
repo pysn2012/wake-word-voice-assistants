@@ -35,8 +35,6 @@ psram:
   mode: hex
   speed: 200MHz
 
-api:
-
 logger:
   hardware_uart: USB_SERIAL_JTAG
 
