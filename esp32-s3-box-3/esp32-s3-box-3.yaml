@@ -42,7 +42,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2025.5.0  # 要求的最低ESPHome版本
+  min_version: 2026.4.0  # 官方新版要求（Timer API 已改为 vector）
   name_add_mac_suffix: true  # 设备名后缀添加MAC地址，避免冲突
   on_boot:  # 开机启动逻辑
     priority: 600
@@ -103,6 +103,7 @@ binary_sensor:
   - platform: gpio
     pin:
       number: GPIO0
+      ignore_strapping_warning: true
       mode: INPUT_PULLUP
       inverted: true
     id: left_top_button
@@ -136,25 +137,30 @@ light:
 
 # I2C总线 (用于触摸屏等，但本配置未显式使用)
 i2c:
-  scl: GPIO18
-  sda: GPIO8
+  - id: i2c_adc_dac
+    scl: GPIO18
+    sda: GPIO8
 
 # I2S音频总线配置
 i2s_audio:
   - id: i2s_audio_bus
-    i2s_lrclk_pin: GPIO45
+    i2s_lrclk_pin:
+      number: GPIO45
+      ignore_strapping_warning: true
     i2s_bclk_pin: GPIO17
     i2s_mclk_pin: GPIO2
 
 # 音频编解码器 (ADC: ES7210, DAC: ES8311)
 audio_adc:
   - platform: es7210
+    i2c_id: i2c_adc_dac
     id: es7210_adc
     bits_per_sample: 16bit
     sample_rate: 16000
 
 audio_dac:
   - platform: es8311
+    i2c_id: i2c_adc_dac
     id: es8311_dac
     bits_per_sample: 16bit
     sample_rate: 48000
@@ -204,7 +210,7 @@ media_player:
             # Ensure VA stops before moving on
             - if:
                 condition:
-                  - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+                  - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
                 then:
                   - wait_until:
                       - not:
@@ -233,8 +239,7 @@ micro_wake_word:
   id: mww
   models:
     - okay_nabu
-    - model: ../models/nihaoxiaozhi.json
-      probability_cutoff: 0.85
+    - model: ../models/pyclassmate.json
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
@@ -289,7 +294,7 @@ voice_assistant:
     # 如果启用了手动唤醒词（mWW），则仅重启它；流式唤醒词会自动重启
     - if:
         condition:
-          - lambda: return id(wake_word_engine_location).state == "On device";
+          - lambda: return id(wake_word_engine_location).current_option() == "On device";
         then:
           - lambda: id(va).set_use_wake_word(false);
           - micro_wake_word.start:
@@ -408,11 +413,11 @@ script:
   - id: fetch_first_active_timer
     then:
       - lambda: |
-          const auto timers = id(va).get_timers();
-          auto output_timer = timers.begin()->second;
-          for (auto &iterable_timer : timers) {
-            if (iterable_timer.second.is_active && iterable_timer.second.seconds_left <= output_timer.seconds_left) {
-              output_timer = iterable_timer.second;
+          const auto &timers = id(va).get_timers();
+          auto output_timer = *timers.begin();
+          for (const auto &timer : timers) {
+            if (timer.is_active && timer.seconds_left <= output_timer.seconds_left) {
+              output_timer = timer;
             }
           }
           id(global_first_active_timer) = output_timer;
@@ -421,13 +426,11 @@ script:
   - id: check_if_timers_active
     then:
       - lambda: |
-          const auto timers = id(va).get_timers();
+          const auto &timers = id(va).get_timers();
           bool output = false;
-          if (timers.size() > 0) {
-            for (auto &iterable_timer : timers) {
-              if(iterable_timer.second.is_active) {
-                output = true;
-              }
+          for (const auto &timer : timers) {
+            if (timer.is_active) {
+              output = true;
             }
           }
           id(global_is_timer_active) = output;
@@ -436,11 +439,11 @@ script:
   - id: fetch_first_timer
     then:
       - lambda: |
-          const auto timers = id(va).get_timers();
-          auto output_timer = timers.begin()->second;
-          for (auto &iterable_timer : timers) {
-            if (iterable_timer.second.seconds_left <= output_timer.seconds_left) {
-              output_timer = iterable_timer.second;
+          const auto &timers = id(va).get_timers();
+          auto output_timer = *timers.begin();
+          for (const auto &timer : timers) {
+            if (timer.seconds_left <= output_timer.seconds_left) {
+              output_timer = timer;
             }
           }
           id(global_first_timer) = output_timer;
@@ -449,10 +452,12 @@ script:
   - id: check_if_timers
     then:
       - lambda: |
-          const auto timers = id(va).get_timers();
+          const auto &timers = id(va).get_timers();
           bool output = false;
-          if (timers.size() > 0) {
-            output = true;
+          for (const auto &timer : timers) {
+            if (timer.is_active) {
+              output = true;
+            }
           }
           id(global_is_timer) = output;
 
@@ -510,7 +515,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "On device";
+              - lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
@@ -519,7 +524,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+              - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
@@ -528,13 +533,13 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+            lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "On device";
+            lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
   # 根据软件静音开关的状态，将语音助手阶段设置为空闲或静音
@@ -553,7 +558,9 @@ switch:
   # 扬声器使能引脚 (GPIO46)
   - platform: gpio
     name: Speaker Enable
-    pin: GPIO46
+    pin:
+      number: GPIO46
+      ignore_strapping_warning: true
     restore_mode: RESTORE_DEFAULT_ON
     entity_category: config
     disabled_by_default: true
@@ -766,7 +773,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_request).state.length()>52) {
+        if(id(text_request).state.length()>32) {
           std::string name = id(text_request).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_request).state = (truncated+"...").c_str();
@@ -776,7 +783,7 @@ text_sensor:
     platform: template
     on_value:
       lambda: |-
-        if(id(text_response).state.length()>52) {
+        if(id(text_response).state.length()>32) {
           std::string name = id(text_response).state.c_str();
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_response).state = (truncated+"...").c_str();
@@ -809,7 +816,7 @@ spi:
 
 # 显示屏 (Display): 配置ILI9XXX系列屏幕（S3BOX型号）
 display:
-  - platform: ili9xxx
+  - platform: mipi_spi
     id: s3_box_lcd
     model: S3BOX
     invert_colors: false
