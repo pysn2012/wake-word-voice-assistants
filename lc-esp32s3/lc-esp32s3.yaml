@@ -28,7 +28,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2025.5.0  # 要求的最低ESPHome版本
+  min_version: 2026.4.0  # 对齐官方新版要求
   name_add_mac_suffix: true  # 设备名后缀添加MAC地址，避免冲突
   on_boot:  # 开机启动逻辑
     priority: 600
@@ -89,6 +89,7 @@ binary_sensor:
   - platform: gpio
     pin:
       number: GPIO0
+      ignore_strapping_warning: true
       mode: INPUT_PULLUP
       inverted: true
     id: boot_button
@@ -160,7 +161,7 @@ media_player:
             # Ensure VA stops before moving on
             - if:
                 condition:
-                  - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+                  - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
                 then:
                   - wait_until:
                       - not:
@@ -188,8 +189,9 @@ media_player:
 micro_wake_word:
   id: mww
   models:
-    - okay_nabu
-    - model: ../models/nihaoxiaozhi.json
+    - model: ../models/heizai.json
+    - model: ../models/xiaowei.json
+    - model: ../models/xiaole.json
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
@@ -246,7 +248,7 @@ voice_assistant:
     # 如果启用了手动唤醒词（mWW），则仅重启它；流式唤醒词会自动重启
     - if:
         condition:
-          - lambda: return id(wake_word_engine_location).state == "On device";
+          - lambda: return id(wake_word_engine_location).current_option() == "On device";
         then:
           - lambda: id(va).set_use_wake_word(false);
           - micro_wake_word.start:
@@ -344,7 +346,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "On device";
+              - lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
@@ -353,7 +355,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+              - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
@@ -362,13 +364,13 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+            lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "On device";
+            lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
   # 根据软件静音开关的状态，将语音助手阶段设置为空闲或静音
